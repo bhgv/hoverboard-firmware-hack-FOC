@@ -148,6 +148,7 @@ static int16_t    speed;                // local variable for speed. -1000 to 10
 static uint32_t    inactivity_timeout_counter;
 static MultipleTap MultipleTapBrake;    // define multiple tap functionality for the Brake pedal
 
+uint32_t max_speed = 0;                 // for DBG
 
 int main(void) {
 
@@ -255,8 +256,10 @@ int main(void) {
       rateLimiter16(cmd2, RATE, &speedRateFixdt);
       filtLowPass32(steerRateFixdt >> 4, FILTER, &steerFixdt);
       filtLowPass32(speedRateFixdt >> 4, FILTER, &speedFixdt);
-      steer = (int16_t)(steerFixdt >> 16);  // convert fixed-point to integer
-      speed = (int16_t)(speedFixdt >> 16);  // convert fixed-point to integer
+      steer = (int16_t)(steerFixdt >> 16);      // convert fixed-point to integer
+      speed = (int16_t)(speedFixdt >> 16);      // convert fixed-point to integer
+
+      if(speed > max_speed) max_speed = speed;  // for DBG
 
       #ifdef STANDSTILL_HOLD_ENABLE
         standstillHold(&speed);                 // Apply Standstill Hold functionality. Only available and makes sense for VOLTAGE or TORQUE Mode
@@ -430,6 +433,11 @@ int main(void) {
 
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
+      #ifdef CONTROL_JX_168
+      if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
+        sendRespUart();
+      }
+      #else
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
         Feedback.cmd1           = (int16_t)cmd1;
@@ -456,8 +464,9 @@ int main(void) {
 
             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
-        #endif            
+        #endif
       }
+      #endif // ifdef CONTROL_JX_168
     #endif
 
     // ####### POWEROFF BY POWER-BUTTON #######

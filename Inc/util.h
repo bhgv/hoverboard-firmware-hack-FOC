@@ -26,6 +26,63 @@
 
 // Rx Structures USART
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
+#ifdef CONTROL_JX_168
+typedef struct {
+  uint8_t mag_01_1;
+  uint8_t mag_14;
+  uint8_t mag_01_2;
+  uint8_t mag_01_3;
+
+  uint8_t spd_md;  // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
+
+  uint8_t dk_c0;
+  uint8_t dk_18;
+  uint8_t dk_5a;
+  uint8_t dk_00_1;
+  uint8_t dk_01;
+  uint8_t dk_05_1;
+  uint8_t dk_64;
+  uint8_t dk_00_2;
+  uint8_t dk_0c;
+  uint8_t dk_00_3;
+  uint8_t dk_00_4;
+
+  uint8_t spd_1;
+  uint8_t spd_2;
+
+  uint8_t dk_05_2;
+
+  uint8_t checksum;
+} SerialCommand;
+
+/*
+ 1sp max - 01 66
+ 2sp max - 01 cc (02 a9?)
+ 3sp max - 03 df
+*/
+
+typedef struct {
+  uint8_t mag_02;
+  uint8_t mag_0e;
+
+  uint8_t dk_01;
+  uint8_t dk_00_1;
+  uint8_t dk_80;
+  uint8_t dk_00_2;
+  uint8_t dk_00_3;
+
+  uint8_t spd_1;
+  uint8_t spd_2;
+  uint8_t spd_3;
+
+  uint8_t dk_00_4;
+  uint8_t dk_00_5;
+  uint8_t dk_ff;
+
+  uint8_t checksum;
+} SerialResp;
+
+#else
   #ifdef CONTROL_IBUS    
     typedef struct{
       uint8_t  start;
@@ -42,6 +99,7 @@
       uint16_t  checksum;    
     } SerialCommand;
   #endif
+#endif
 #endif
 #if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
     typedef struct{
@@ -77,6 +135,8 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir);
 void poweroff(void);
 void poweroffPressCheck(void);
 
+void sendRespUart(void);
+
 // Read Command Function
 void readCommand(void);
 void usart2_rx_check(void);
@@ -85,7 +145,8 @@ void usart3_rx_check(void);
 void usart_process_debug(uint8_t *userCommand, uint32_t len);
 #endif
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-void usart_process_command(SerialCommand *command_in, SerialCommand *command_out, uint8_t usart_idx);
+int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
+                          uint8_t usart_idx);
 #endif
 #if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
 void usart_process_sideboard(SerialSideboard *Sideboard_in, SerialSideboard *Sideboard_out, uint8_t usart_idx);

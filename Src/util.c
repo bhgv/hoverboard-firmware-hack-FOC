@@ -709,17 +709,95 @@ void poweroffPressCheck(void) {
       }
     }
   #else
+
+#ifdef CONTROL_JX_168
+    if (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+      enable = 0;                                             // disable motors
+      poweroff();                                             // release power-latch
+    }
+#else
     if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
       enable = 0;                                             // disable motors
       while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {}    // wait until button is released
       poweroff();                                             // release power-latch
     }
+#endif
   #endif
 }
 
 
+/* =========================== Send Response Function =========================== */
+SerialResp fb;
+
+uint16_t max_n_mot = 0;
+
+void sendRespUart(void) {
+//  SerialResp fb;
+/*
+typedef struct {
+  uint8_t mag_02;
+  uint8_t mag_0e;
+
+  uint8_t dk_01;
+  uint8_t dk_00_1;
+  uint8_t dk_80;
+  uint8_t dk_00_2;
+  uint8_t dk_00_3;
+
+  uint8_t spd_1;
+  uint8_t spd_2;
+  uint8_t spd_3;
+
+  uint8_t dk_00_4;
+  uint8_t dk_00_5;
+  uint8_t dk_ff;
+
+  uint8_t checksum;
+} SerialResp;
+*/
+
+  fb.mag_02 = 0x02;
+  fb.mag_0e = 0x0e;
+
+  fb.dk_01 = 0x01;
+  fb.dk_00_1 = 0x00;
+  fb.dk_80 = 0x80;
+  fb.dk_00_2 = 0x00;
+  fb.dk_00_3 = 0x00;
+
+  if (rtY_Left.n_mot > max_n_mot) max_n_mot = rtY_Left.n_mot;
+
+  double   tspd_f = 10. * 1000000.0 / (200. * (double)rtY_Left.n_mot);
+  uint16_t tspd_i = 0x1770; //rtY_Right.n_mot; //0x1770;
+
+  if (tspd_i > (uint16_t)tspd_f)
+    tspd_i = (uint16_t)tspd_f;
+
+  fb.spd_1 = 5; //(uint8_t)(tspd & 0xff);
+  fb.spd_2 = (uint8_t)(tspd_i >> 8);
+  fb.spd_3 = (uint8_t)(tspd_i & 0xff);
+
+  fb.dk_00_4 = 0x00;
+  fb.dk_00_5 = 0x00;
+  fb.dk_ff = 0xff;
+
+  fb.checksum = 0x00;
+
+  int i;
+  for (i = 0; i < sizeof(SerialResp) - 1; i++)
+    fb.checksum ^= ((uint8_t*)&fb)[i];
+
+  //#if defined(FEEDBACK_SERIAL_USART3)
+  if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
+    HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&fb, sizeof(SerialResp));
+  }
+  //#endif
+}
+
 
 /* =========================== Read Command Function =========================== */
+
+uint16_t max_cmd2 = 0;
 
 void readCommand(void) {
 
@@ -811,10 +889,49 @@ void readCommand(void) {
         cmd1 = CLAMP((ibus_captured_value[0] - 500) * 2, INPUT_MIN, INPUT_MAX);
         cmd2 = CLAMP((ibus_captured_value[1] - 500) * 2, INPUT_MIN, INPUT_MAX); 
       #else
+      #ifdef CONTROL_JX_168
+      /*
+         typedef struct{
+           uint8_t  mag_01_1;
+           uint8_t  mag_14;
+           uint8_t  mag_01_2;
+           uint8_t  mag_01_3;
+
+           uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
+
+           uint8_t  dk_c0;
+           uint8_t  dk_18;
+           uint8_t  dk_5a;
+           uint8_t  dk_00_1;
+           uint8_t  dk_01;
+           uint8_t  dk_05_1;
+           uint8_t  dk_64;
+           uint8_t  dk_00_2;
+           uint8_t  dk_0c;
+           uint8_t  dk_00_3;
+           uint8_t  dk_00_4;
+
+           uint8_t  spd_1;
+           uint8_t  spd_2;
+
+           uint8_t  dk_5_2;
+
+           uint8_t  checksum;
+         } SerialCommand;
+      */
+
+      cmd1 = 0;
+
+      uint32_t tmp = (int32_t)(((uint32_t)command.spd_1 << 8) | (uint32_t)command.spd_2);
+      cmd2 = (int16_t)(((uint32_t)N_MOT_MAX * tmp) / (uint32_t)0x03df);
+
+      if(cmd2 > max_cmd2) max_cmd2 = cmd2;
+      #else
        if (IN_RANGE(command.steer, INPUT_MIN, INPUT_MAX) && IN_RANGE(command.speed, INPUT_MIN, INPUT_MAX)) {
         cmd1 = command.steer;
         cmd2 = command.speed;
        }
+      #endif // ifdef CONTROL_JX_168
       #endif
 
       #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
@@ -945,9 +1062,11 @@ void usart2_rx_check(void)
 void usart3_rx_check(void)
 {
   #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  static uint32_t old_pos;
+  static uint32_t old_pos = 0;
   uint32_t pos;  
   pos = rx_buffer_R_len - __HAL_DMA_GET_COUNTER(huart3.hdmarx);         // Calculate current position in buffer
+
+  if (old_pos > pos) old_pos = 0;
   #endif
 
   #if defined(DEBUG_SERIAL_USART3)
@@ -965,20 +1084,54 @@ void usart3_rx_check(void)
 
   #ifdef CONTROL_SERIAL_USART3
   uint8_t *ptr;	
+
+  #ifdef CONTROL_JX_168
+  static uint8_t st = 0;
+
   if (pos != old_pos) {                                                 // Check change in received data
     ptr = (uint8_t *)&command_raw;                                      // Initialize the pointer with command_raw address
-    if (pos > old_pos && (pos - old_pos) == command_len) {              // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
-      memcpy(ptr, &rx_buffer_R[old_pos], command_len);                  // Copy data. This is possible only if command_raw is contiguous! (meaning all the structure members have the same size)
-      usart_process_command(&command_raw, &command, 3);                 // Process data
-    } else if ((rx_buffer_R_len - old_pos + pos) == command_len) {      // "Overflow" buffer mode: check if data length equals expected length
-      memcpy(ptr, &rx_buffer_R[old_pos], rx_buffer_R_len - old_pos);    // First copy data from the end of buffer
-      if (pos > 0) {                                                    // Check and continue with beginning of buffer
-        ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in command_raw		
-        memcpy(ptr, &rx_buffer_R[0], pos);                              // Copy remaining data
+    int i;
+    for(; st < 10 && old_pos < pos; old_pos++) {
+      uint8_t c = rx_buffer_R[old_pos];
+      ptr[st] = c;
+      switch(st) {
+        case 0:
+          if(c == 0x01) st = 1;
+          break;
+
+        case 1:
+          if(c == 0x14) st = 2;
+          break;
+
+        case 2:
+          if(c == 0x01) st = 3;
+          break;
+
+        case 3:
+          if(c == 0x01) st = 10;
+          break;
+
+      };
+    }
+    if (st >= 10) {
+      if (pos > old_pos && (pos - old_pos) >= command_len - 4) {          // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
+        memcpy(&ptr[4], &rx_buffer_R[old_pos], command_len - 4);          // Copy data. This is possible only if command_raw is contiguous! (meaning all the structure members have the same size)
+        usart_process_command(&command_raw, &command, 3);                 // Process data
+        st = 0;
+        old_pos += command_len - 4;
+      } else if ((rx_buffer_R_len - (old_pos - 4) + pos) == command_len) {      // "Overflow" buffer mode: check if data length equals expected length
+        memcpy(ptr, &rx_buffer_R[old_pos], rx_buffer_R_len - old_pos);    // First copy data from the end of buffer
+        if (pos > 0) {                                                    // Check and continue with beginning of buffer
+          ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in command_raw
+          memcpy(ptr, &rx_buffer_R[0], pos);                              // Copy remaining data
+        }
+        usart_process_command(&command_raw, &command, 3);                 // Process data
+        st = 0;
+        old_pos += command_len - 4;
       }
-      usart_process_command(&command_raw, &command, 3);                 // Process data
     }
   }
+  #endif // ifdef CONTROL_JX_168
   #endif // CONTROL_SERIAL_USART3
 
 	#ifdef SIDEBOARD_SERIAL_USART3
@@ -1000,8 +1153,10 @@ void usart3_rx_check(void)
   #endif // SIDEBOARD_SERIAL_USART3
 
   #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
+  #ifndef CONTROL_JX_168
   old_pos = pos;                                                        // Update old position
-  if (old_pos == rx_buffer_R_len) {                                     // Check and manually update if we reached end of buffer
+  #endif // ifdef CONTROL_JX_168
+  if (old_pos >= rx_buffer_R_len) {                                     // Check and manually update if we reached end of buffer
     old_pos = 0;
   }
 	#endif
@@ -1027,8 +1182,10 @@ void usart_process_debug(uint8_t *userCommand, uint32_t len)
  * - if the command_in data is valid (correct START_FRAME and checksum) copy the command_in to command_out
  */
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-void usart_process_command(SerialCommand *command_in, SerialCommand *command_out, uint8_t usart_idx)
+
+int usart_process_command(SerialCommand *command_in, SerialCommand *command_out, uint8_t usart_idx)
 {
+  int ret = sizeof(SerialCommand);
   #ifdef CONTROL_IBUS
     if (command_in->start == IBUS_LENGTH && command_in->type == IBUS_COMMAND) {
       ibus_chksum = 0xFFFF - IBUS_LENGTH - IBUS_COMMAND;
@@ -1051,7 +1208,67 @@ void usart_process_command(SerialCommand *command_in, SerialCommand *command_out
       }
     }
   #else
-  uint16_t checksum;
+   #ifdef CONTROL_JX_168
+    uint8_t checksum = 0;
+/*
+typedef struct{
+  uint8_t  mag_01_1;
+  uint8_t  mag_14;
+  uint8_t  mag_01_2;
+  uint8_t  mag_01_3;
+
+  uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
+
+  uint8_t  dk_c0;
+  uint8_t  dk_18;
+  uint8_t  dk_5a;
+  uint8_t  dk_00_1;
+  uint8_t  dk_01;
+  uint8_t  dk_05;
+  uint8_t  dk_64;
+  uint8_t  dk_00_2;
+  uint8_t  dk_0c;
+  uint8_t  dk_00_3;
+  uint8_t  dk_00_4;
+
+  uint8_t  spd_1;
+  uint8_t  spd_2;
+
+  uint8_t  dk_00_4;
+  uint8_t  dk_00_5;
+  uint8_t  dk_ff;
+
+  uint8_t  checksum;
+} SerialCommand;
+*/
+  if (
+    command_in->mag_01_1 != 0x01
+    || command_in->mag_14 != 0x14
+    || command_in->mag_01_2 != 0x01
+    || command_in->mag_01_3 != 0x01
+  ) {
+     ret = 1;
+  } else {
+     int i;
+     for (i = 0; i < sizeof(SerialCommand); i++)
+       checksum ^= ((uint8_t*)command_in)[i];
+     if (checksum == 0) {
+       *command_out = *command_in;
+       if (usart_idx == 2) {             // Sideboard USART2
+#ifdef CONTROL_SERIAL_USART2
+          timeoutCntSerial_L  = 0;        // Reset timeout counter
+          timeoutFlagSerial_L = 0;        // Clear timeout flag
+#endif
+        } else if (usart_idx == 3) {      // Sideboard USART3
+#ifdef CONTROL_SERIAL_USART3
+          timeoutCntSerial_R  = 0;        // Reset timeout counter
+          timeoutFlagSerial_R = 0;        // Clear timeout flag
+#endif
+        }
+	  }
+    }
+   #else
+    uint16_t checksum;
 	if (command_in->start == SERIAL_START_FRAME) {
 		checksum = (uint16_t)(command_in->start ^ command_in->steer ^ command_in->speed);
 		if (command_in->checksum == checksum) {					
@@ -1070,6 +1287,8 @@ void usart_process_command(SerialCommand *command_in, SerialCommand *command_out
     }
   }
   #endif
+  #endif
+  return ret;
 }
 #endif
 

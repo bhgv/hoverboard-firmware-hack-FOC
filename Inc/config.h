@@ -140,7 +140,7 @@
 
 // Control selections
 #define CTRL_TYP_SEL    FOC_CTRL        // [-] Control type selection: COM_CTRL, SIN_CTRL, FOC_CTRL (default)
-#define CTRL_MOD_REQ    VLT_MODE        // [-] Control mode request: OPEN_MODE, VLT_MODE (default), SPD_MODE, TRQ_MODE. Note: SPD_MODE and TRQ_MODE are only available for CTRL_FOC!
+#define CTRL_MOD_REQ    TRQ_MODE        // [-] Control mode request: OPEN_MODE, VLT_MODE (default), SPD_MODE, TRQ_MODE. Note: SPD_MODE and TRQ_MODE are only available for CTRL_FOC!
 #define DIAG_ENA        1               // [-] Motor Diagnostics enable flag: 0 = Disabled, 1 = Enabled (default)
 
 // Limitation settings
@@ -265,6 +265,15 @@
   #define FEEDBACK_SERIAL_USART3        // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
   // #define SUPPORT_BUTTONS_LEFT          // use left sensor board cable for button inputs.  Disable DEBUG_SERIAL_USART2!
   // #define SUPPORT_BUTTONS_RIGHT         // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
+#endif
+// ######################## END OF VARIANT_USART SETTINGS #########################
+
+//  #define SPEED_COEFFICIENT   14746     // 0.9f - higher value == stronger. 0.0 to ~2.0
+//  #define STEER_COEFFICIENT   8192      // 0.5f - higher value == stronger. if you do not want any steering, set it to 0.0; 0.0 to 1.0
+//  #define INVERT_R_DIRECTION            // Invert right motor
+//  #define INVERT_L_DIRECTION            // Invert left motor
+
+#define CONTROL_JX_168                  // use JX-168 like (kugoo m2-3-4) controller
 #endif
 // ######################## END OF VARIANT_USART SETTINGS #########################
 
@@ -482,8 +491,14 @@
   #define USART2_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
 #endif
 #if defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  #define USART3_BAUD             38400                   // UART3 baud rate (short wired cable)
-  #define USART3_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
+
+  #ifdef CONTROL_JX_168
+    #define USART3_BAUD             9600                  // UART3 baud rate (short wired cable)
+  #else
+    #define USART3_BAUD             38400                 // UART3 baud rate (short wired cable)
+  #endif
+
+  #define USART3_WORDLENGTH         UART_WORDLENGTH_8B    // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
 #endif
 // ########################### UART SETIINGS ############################
 
