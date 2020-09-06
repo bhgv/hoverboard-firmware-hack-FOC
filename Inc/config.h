@@ -4,6 +4,55 @@
 
 #include "stm32f1xx_hal.h"
 
+
+// ############################### e-scooter select ################################
+
+#define CONTROL_JX_168                  // use JX-168 like (Kugoo m2-3-4) controller
+//#define CONTROL_M365                    // use Xiaomi-m365 like controller
+//#define CONTROL_S3                      // use Kugoo S3 (Jilong) controller
+
+
+#if defined(CONTROL_JX_168) || defined(CONTROL_M365) || defined(CONTROL_S3)
+  #define VARIANT_USART
+
+  // #define CONTROL_SERIAL_USART2         // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
+  // #define FEEDBACK_SERIAL_USART2        // left sensor board cable, disable if ADC or PPM is used!
+
+  #define CONTROL_SERIAL_USART3         // right sensor board cable, disable if I2C (nunchuk or lcd) is used! For Arduino control check the hoverSerial.ino
+  #define FEEDBACK_SERIAL_USART3        // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
+#endif
+
+
+// ############################### Xiaomi m365 defs ################################
+
+#ifdef CONTROL_M365
+  //#define SPD1 0x999   // 1024 * 60 / 100
+  #define SPD1 0x500   // 1024 * 45 / 100
+  #define SPD2 0x800   // 1024 * 45 / 100
+  //#define SPD2 0xccc   // 4096 * 80 / 100
+  #define SPD3 0xb00   // 4096 * 70 / 100
+  #define SPD4 0xfff   // 4096 * 100 / 100 - 1 (max)
+
+  #define LEDS_MAX 8
+
+  #define MAX_ACC 0xa0 //0x78  // 0x78 -- 3.3v  0xB2 -- 5v
+  #define MIN_ACC 0x30 //0x78  // 0x78 -- 3.3v  0xB2 -- 5v
+
+  enum {
+    ST_OFF = 0,
+    ST_ON,
+    ST_LT,
+  };
+
+  enum {
+	  SPD_MD_1 = 0,
+    SPD_MD_2,
+	  SPD_MD_3,
+    SPD_MD_4,
+  };
+#endif
+
+
 // ############################### VARIANT SELECTION ###############################
 // PlatformIO: uncomment desired variant in platformio.ini
 // Keil uVision: select desired variant from the Target drop down menu (to the right of the Load button)
@@ -265,15 +314,14 @@
   #define FEEDBACK_SERIAL_USART3        // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
   // #define SUPPORT_BUTTONS_LEFT          // use left sensor board cable for button inputs.  Disable DEBUG_SERIAL_USART2!
   // #define SUPPORT_BUTTONS_RIGHT         // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
-#endif
-// ######################## END OF VARIANT_USART SETTINGS #########################
 
 //  #define SPEED_COEFFICIENT   14746     // 0.9f - higher value == stronger. 0.0 to ~2.0
 //  #define STEER_COEFFICIENT   8192      // 0.5f - higher value == stronger. if you do not want any steering, set it to 0.0; 0.0 to 1.0
 //  #define INVERT_R_DIRECTION            // Invert right motor
 //  #define INVERT_L_DIRECTION            // Invert left motor
 
-#define CONTROL_JX_168                  // use JX-168 like (kugoo m2-3-4) controller
+//#ifndef CONTROL_JX_168
+//#define CONTROL_JX_168                  // use JX-168 like (kugoo m2-3-4) controller
 #endif
 // ######################## END OF VARIANT_USART SETTINGS #########################
 
@@ -491,11 +539,14 @@
   #define USART2_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
 #endif
 #if defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-
-  #ifdef CONTROL_JX_168
-    #define USART3_BAUD             9600                  // UART3 baud rate (short wired cable)
+  #if defined(CONTROL_JX_168) || defined(CONTROL_S3)
+    #define USART3_BAUD 9600                              // UART3 baud rate (short wired cable)
   #else
-    #define USART3_BAUD             38400                 // UART3 baud rate (short wired cable)
+    #ifdef CONTROL_M365
+      #define USART3_BAUD 115200                          // UART3 baud rate (short wired cable)
+    #else
+      #define USART3_BAUD 38400                           // UART3 baud rate (short wired cable)
+    #endif
   #endif
 
   #define USART3_WORDLENGTH         UART_WORDLENGTH_8B    // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B

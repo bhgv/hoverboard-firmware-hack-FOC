@@ -1,3 +1,9 @@
+# this fork
+to support protocols and controllers of popular elecric scooters:
+  * Kugoo S3-S2 (Jilong kind. yellow screen board. if you have other buy on ali yelow it's cheap)
+  * Kugoo M2, M3, M4 (now only JX-168 screen controller)
+  * Xiaomi m365 (only part of protocol. accelerating, breaking, control of leds, night mode/light)
+
 # hoverboard-firmware-hack-FOC
 [![Build Status](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC.svg?branch=master)](https://travis-ci.com/EmanuelFeru/hoverboard-firmware-hack-FOC)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)

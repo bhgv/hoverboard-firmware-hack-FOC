@@ -5,6 +5,7 @@
 * Copyright (C) 2017-2018 Nico Stute <crinq@crinq.de>
 * Copyright (C) 2017-2018 Niklas Fauth <niklas.fauth@kit.fail>
 * Copyright (C) 2019-2020 Emanuel FERU <aerdronix@gmail.com>
+* Copyright (C) 2021 bhgv (e-scooters: Kugoo S3, M2 (JX-168), Xiaomi m365 supp. part) <bhgv.empire@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -433,7 +434,7 @@ int main(void) {
 
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
-      #ifdef CONTROL_JX_168
+      #if defined(CONTROL_JX_168) || defined(CONTROL_S3) || defined(CONTROL_M365)
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
         sendRespUart();
       }
