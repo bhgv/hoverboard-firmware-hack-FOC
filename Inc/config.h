@@ -7,13 +7,11 @@
 
 // ############################### e-scooter select ################################
 
-//#include "conf-kugoo-m2.h"
-#include "conf-xiaomi-m365.h"
+#include "conf-kugoo-m2.h"
+//#include "conf-xiaomi-m365.h"
 //#include "conf-kugoo-s3.h"
 
-//#define CONTROL_JX_168                  // use JX-168 like (Kugoo m2-3-4) controller
-//#define CONTROL_M365                    // use Xiaomi-m365 like controller
-//#define CONTROL_S3                      // use Kugoo S3 (Jilong) controller
+
 
 // ############################### VARIANT SELECTION ###############################
 // PlatformIO: uncomment desired variant in platformio.ini
