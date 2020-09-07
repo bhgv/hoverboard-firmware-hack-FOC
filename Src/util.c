@@ -101,7 +101,7 @@ uint8_t  timeoutFlagADC    = 0;         // Timeout Flag for ADC Protection:    0
 uint8_t  timeoutFlagSerial = 0;         // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
 uint8_t  ctrlModReqRaw = CTRL_MOD_REQ;
-uint8_t  ctrlModReq    = CTRL_MOD_REQ;  // Final control mode request 
+uint8_t  ctrlModReq    = CTRL_MOD_REQ;  // Final control mode request
 
 #if defined(DEBUG_I2C_LCD) || defined(SUPPORT_LCD)
 LCD_PCF8574_HandleTypeDef lcd;
@@ -159,8 +159,8 @@ static uint8_t rx_buffer_L[SERIAL_BUFFER_SIZE];	// USART Rx DMA circular buffer
 static uint32_t rx_buffer_L_len = ARRAY_LEN(rx_buffer_L);
 #endif
 #if defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
-static uint16_t timeoutCntSerial_L  = 0;  		// Timeout counter for Rx Serial command
-static uint8_t  timeoutFlagSerial_L = 0;  		// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
+uint16_t timeoutCntSerial_L  = 0;  		// Timeout counter for Rx Serial command
+uint8_t  timeoutFlagSerial_L = 0;  		// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 #endif
 #if defined(SIDEBOARD_SERIAL_USART2)
 SerialSideboard Sideboard_L;
@@ -169,12 +169,12 @@ static uint32_t Sideboard_L_len = sizeof(Sideboard_L);
 #endif
 
 #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-static uint8_t rx_buffer_R[SERIAL_BUFFER_SIZE]; // USART Rx DMA circular buffer
-static uint32_t rx_buffer_R_len = ARRAY_LEN(rx_buffer_R);
+uint8_t rx_buffer_R[SERIAL_BUFFER_SIZE]; // USART Rx DMA circular buffer
+uint32_t rx_buffer_R_len = ARRAY_LEN(rx_buffer_R);
 #endif
 #if defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-static uint16_t timeoutCntSerial_R  = 0;  		// Timeout counter for Rx Serial command
-static uint8_t  timeoutFlagSerial_R = 0;  		// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
+uint16_t timeoutCntSerial_R  = 0;  		// Timeout counter for Rx Serial command
+uint8_t  timeoutFlagSerial_R = 0;  		// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 #endif
 #if defined(SIDEBOARD_SERIAL_USART3)
 SerialSideboard Sideboard_R;
@@ -183,9 +183,9 @@ static uint32_t Sideboard_R_len = sizeof(Sideboard_R);
 #endif
 
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-static SerialCommand command;
-static SerialCommand command_raw;
-static uint32_t command_len = sizeof(command);
+SerialCommand command;
+SerialCommand command_raw;
+uint32_t command_len = sizeof(command);
   #ifdef CONTROL_IBUS
   static uint16_t ibus_chksum;
   static uint16_t ibus_captured_value[IBUS_NUM_CHANNELS];
@@ -207,21 +207,17 @@ static uint8_t button1, button2;
 static uint8_t brakePressed;
 #endif
 
-#ifdef CONTROL_M365
-static uint8_t spd_md = SPD_MD_1;
-#endif
-
 
 /* =========================== Initialization Functions =========================== */
 
 void BLDC_Init(void) {
-  /* Set BLDC controller parameters */ 
+  /* Set BLDC controller parameters */
   rtP_Left.b_selPhaABCurrMeas   = 1;            // Left motor measured current phases {Green, Blue} = {iA, iB} -> do NOT change
   rtP_Left.z_ctrlTypSel         = CTRL_TYP_SEL;
-  rtP_Left.b_diagEna            = DIAG_ENA; 
+  rtP_Left.b_diagEna            = DIAG_ENA;
   rtP_Left.i_max                = (I_MOT_MAX * A2BIT_CONV) << 4;        // fixdt(1,16,4)
   rtP_Left.n_max                = N_MOT_MAX << 4;                       // fixdt(1,16,4)
-  rtP_Left.b_fieldWeakEna       = FIELD_WEAK_ENA; 
+  rtP_Left.b_fieldWeakEna       = FIELD_WEAK_ENA;
   rtP_Left.id_fieldWeakMax      = (FIELD_WEAK_MAX * A2BIT_CONV) << 4;   // fixdt(1,16,4)
   rtP_Left.a_phaAdvMax          = PHASE_ADV_MAX << 4;                   // fixdt(1,16,4)
   rtP_Left.r_fieldWeakHi        = FIELD_WEAK_HI << 4;                   // fixdt(1,16,4)
@@ -247,7 +243,7 @@ void BLDC_Init(void) {
   BLDC_controller_initialize(rtM_Right);
 }
 
-void Input_Lim_Init(void) {     // Input Limitations - ! Do NOT touch !    
+void Input_Lim_Init(void) {     // Input Limitations - ! Do NOT touch !
   if (rtP_Left.b_fieldWeakEna || rtP_Right.b_fieldWeakEna) {
     INPUT_MAX = MAX( 1000, FIELD_WEAK_HI);
     INPUT_MIN = MIN(-1000,-FIELD_WEAK_HI);
@@ -286,11 +282,11 @@ void Input_Init(void) {
     UART_DisableRxErrors(&huart3);
   #endif
 
-  #ifdef CONTROL_ADC  
+  #ifdef CONTROL_ADC
 
     uint16_t writeCheck, i_max, n_max;
-    HAL_FLASH_Unlock();    
-    EE_Init();            /* EEPROM Init */    
+    HAL_FLASH_Unlock();
+    EE_Init();            /* EEPROM Init */
     EE_ReadVariable(VirtAddVarTab[0], &writeCheck);
     if (writeCheck == FLASH_WRITE_KEY) {
       EE_ReadVariable(VirtAddVarTab[1], &ADC1_MIN_CAL);
@@ -310,10 +306,10 @@ void Input_Init(void) {
 
   #endif
 
-  #ifdef VARIANT_TRANSPOTTER    
+  #ifdef VARIANT_TRANSPOTTER
     enable = 1;
-    
-    HAL_FLASH_Unlock();    
+
+    HAL_FLASH_Unlock();
     EE_Init();            /* EEPROM Init */
     EE_ReadVariable(VirtAddVarTab[0], &saveValue);
     HAL_FLASH_Lock();
@@ -423,7 +419,7 @@ void calcAvgSpeed(void) {
     // Handle the case when SPEED_COEFFICIENT sign is negative (which is when most significant bit is 1)
     if (SPEED_COEFFICIENT & (1 << 16)) {
       speedAvg    = -speedAvg;
-    } 
+    }
     speedAvgAbs   = abs(speedAvg);
 }
 
@@ -442,7 +438,7 @@ void adcCalibLim(void) {
   }
   #ifdef CONTROL_ADC
     consoleLog("ADC calibration started... ");
-    
+
     // Inititalization: MIN = a high values, MAX = a low value,
     int32_t adc1_fixdt = adc_buffer.l_tx2 << 16;
     int32_t adc2_fixdt = adc_buffer.l_rx2 << 16;
@@ -453,7 +449,7 @@ void adcCalibLim(void) {
     uint16_t ADC2_MIN_temp   = 4095;
     uint16_t ADC2_MID_temp   = 0;
     uint16_t ADC2_MAX_temp   = 0;
-    
+
     adc_cal_valid = 1;
 
     // Extract MIN, MAX and MID from ADC while the power button is not pressed
@@ -463,15 +459,15 @@ void adcCalibLim(void) {
       ADC1_MID_temp = (uint16_t)CLAMP(adc1_fixdt >> 16, 0, 4095);                   // convert fixed-point to integer
       ADC2_MID_temp = (uint16_t)CLAMP(adc2_fixdt >> 16, 0, 4095);
       ADC1_MIN_temp = MIN(ADC1_MIN_temp, ADC1_MID_temp);
-      ADC1_MAX_temp = MAX(ADC1_MAX_temp, ADC1_MID_temp);      
+      ADC1_MAX_temp = MAX(ADC1_MAX_temp, ADC1_MID_temp);
       ADC2_MIN_temp = MIN(ADC2_MIN_temp, ADC2_MID_temp);
       ADC2_MAX_temp = MAX(ADC2_MAX_temp, ADC2_MID_temp);
       HAL_Delay(5);
     }
 
-    // ADC calibration checks 
+    // ADC calibration checks
     #ifdef ADC_PROTECT_ENA
-    if ((ADC1_MIN_temp + 150 - ADC_PROTECT_THRESH) > 0 && (ADC1_MAX_temp - 150 + ADC_PROTECT_THRESH) < 4095 && 
+    if ((ADC1_MIN_temp + 150 - ADC_PROTECT_THRESH) > 0 && (ADC1_MAX_temp - 150 + ADC_PROTECT_THRESH) < 4095 &&
         (ADC2_MIN_temp + 150 - ADC_PROTECT_THRESH) > 0 && (ADC2_MAX_temp - 150 + ADC_PROTECT_THRESH) < 4095) {
       adc_cal_valid = 1;
     } else {
@@ -484,10 +480,10 @@ void adcCalibLim(void) {
     if (adc_cal_valid && (ADC1_MAX_temp - ADC1_MIN_temp) > 500 && (ADC2_MAX_temp - ADC2_MIN_temp) > 500) {
       ADC1_MIN_CAL = ADC1_MIN_temp + 150;
       ADC1_MID_CAL = ADC1_MID_temp;
-      ADC1_MAX_CAL = ADC1_MAX_temp - 150;    
+      ADC1_MAX_CAL = ADC1_MAX_temp - 150;
       ADC2_MIN_CAL = ADC2_MIN_temp + 150;
       ADC2_MID_CAL = ADC2_MID_temp;
-      ADC2_MAX_CAL = ADC2_MAX_temp - 150;      
+      ADC2_MAX_CAL = ADC2_MAX_temp - 150;
       consoleLog("OK\n");
     } else {
       adc_cal_valid = 0;
@@ -522,11 +518,11 @@ void updateCurSpdLim(void) {
     while (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN) && cur_spd_timeout++ < 2000) {  // 10 sec timeout
       filtLowPass32(adc_buffer.l_tx2, FILTER, &adc1_fixdt);
       filtLowPass32(adc_buffer.l_rx2, FILTER, &adc2_fixdt);
-      HAL_Delay(5);      
+      HAL_Delay(5);
     }
 
     // Calculate scaling factors
-    cur_factor      = CLAMP((adc1_fixdt - (ADC1_MIN_CAL << 16)) / (ADC1_MAX_CAL - ADC1_MIN_CAL), 6553, 65535);    // ADC1, MIN_cur(10%) = 1.5 A 
+    cur_factor      = CLAMP((adc1_fixdt - (ADC1_MIN_CAL << 16)) / (ADC1_MAX_CAL - ADC1_MIN_CAL), 6553, 65535);    // ADC1, MIN_cur(10%) = 1.5 A
     spd_factor      = CLAMP((adc2_fixdt - (ADC2_MIN_CAL << 16)) / (ADC2_MAX_CAL - ADC2_MIN_CAL), 3276, 65535);    // ADC2, MIN_spd(5%)  = 50 rpm
 
     // Update maximum limits
@@ -567,7 +563,7 @@ void saveConfig() {
       EE_WriteVariable(VirtAddVarTab[8], rtP_Left.n_max);
       HAL_FLASH_Lock();
     }
-  #endif 
+  #endif
 }
 
  /*
@@ -594,7 +590,7 @@ int addDeadBand(int16_t u, int16_t deadBand, int16_t in_min, int16_t in_max, int
  * Standstill Hold Function
  * This function will switch to SPEED mode at standstill to provide an anti-roll functionality.
  * Only available and makes sense for VOLTAGE or TORQUE mode.
- * 
+ *
  * Input: pointer *speedCmd
  * Output: modified Control Mode Request
  */
@@ -617,7 +613,7 @@ void standstillHold(int16_t *speedCmd) {
  * Electric Brake Function
  * In case of TORQUE mode, this function replaces the motor "freewheel" with a constant braking when the input torque request is 0.
  * This is useful when a small amount of motor braking is desired instead of "freewheel".
- * 
+ *
  * Input: speedBlend = fixdt(0,16,15), reverseDir = {0, 1}
  * Output: cmd2 (Throtle) with brake component included
  */
@@ -625,11 +621,11 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
   #if defined(ELECTRIC_BRAKE_ENABLE) && (CTRL_TYP_SEL == FOC_CTRL) && (CTRL_MOD_REQ == TRQ_MODE)
     int16_t brakeVal;
 
-    // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving) 
+    // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving)
     if (speedAvg > 0) {
       brakeVal = (int16_t)((-ELECTRIC_BRAKE_MAX * speedBlend) >> 15);
     } else {
-      brakeVal = (int16_t)(( ELECTRIC_BRAKE_MAX * speedBlend) >> 15);          
+      brakeVal = (int16_t)(( ELECTRIC_BRAKE_MAX * speedBlend) >> 15);
     }
 
     // Check if direction is reversed
@@ -667,6 +663,7 @@ void poweroff(void) {
 }
 
 
+#if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
 void poweroffPressCheck(void) {
 	#if defined(CONTROL_ADC)
     if(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
@@ -674,17 +671,17 @@ void poweroffPressCheck(void) {
       uint16_t cnt_press = 0;
       while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
         HAL_Delay(10);
-        if (cnt_press++ == 5 * 100) { shortBeep(5); }          
+        if (cnt_press++ == 5 * 100) { shortBeep(5); }
       }
       if (cnt_press >= 5 * 100) {                         // Check if press is more than 5 sec
-        HAL_Delay(300);        
+        HAL_Delay(300);
         if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {  // Double press: Adjust Max Current, Max Speed
-          while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }  
+          while(HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) { HAL_Delay(10); }
           longBeep(8);
           updateCurSpdLim();
           shortBeep(5);
         } else {                                          // Long press: Calibrate ADC Limits
-          longBeep(16); 
+          longBeep(16);
           adcCalibLim();
           shortBeep(5);
         }
@@ -714,109 +711,20 @@ void poweroffPressCheck(void) {
       }
     }
   #else
-
-#ifdef CONTROL_JX_168
-    if (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
-      enable = 0;                                             // disable motors
-      poweroff();                                             // release power-latch
-    }
-#else
     if (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
       enable = 0;                                             // disable motors
       while (HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {}    // wait until button is released
       poweroff();                                             // release power-latch
     }
-#endif
   #endif
 }
-
-
-/* =========================== xiaomi-m365 calculateChecksum Function =========== */
-#ifdef CONTROL_M365
-  uint16_t calculateChecksum(uint8_t *data) {
-    uint8_t len = data[0] + 2;
-    uint16_t sum = 0;
-    for (int i = 0; i < len; i++)
-      sum += data[i];
-    sum ^= 0xFFFF;
-    return sum;
-  }
 #endif
 
-/* =========================== Send Response Function =========================== */
-SerialResp fb;
-
-uint16_t max_n_mot = 0;
-
-void sendRespUart(void) {
-#ifdef CONTROL_JX_168
-//  SerialResp fb;
-/*
-typedef struct {
-  uint8_t mag_02;
-  uint8_t mag_0e;
-
-  uint8_t dk_01;
-  uint8_t dk_00_1;
-  uint8_t dk_80;
-  uint8_t dk_00_2;
-  uint8_t dk_00_3;
-
-  uint8_t spd_1;
-  uint8_t spd_2;
-  uint8_t spd_3;
-
-  uint8_t dk_00_4;
-  uint8_t dk_00_5;
-  uint8_t dk_ff;
-
-  uint8_t checksum;
-} SerialResp;
-*/
-
-  fb.mag_02 = 0x02;
-  fb.mag_0e = 0x0e;
-
-  fb.dk_01 = 0x01;
-  fb.dk_00_1 = 0x00;
-  fb.dk_80 = 0x80;
-  fb.dk_00_2 = 0x00;
-  fb.dk_00_3 = 0x00;
-
-  if (rtY_Left.n_mot > max_n_mot) max_n_mot = rtY_Left.n_mot;
-
-  double   tspd_f = 10. * 1000000.0 / (200. * (double)rtY_Left.n_mot);
-  uint16_t tspd_i = 0x1770; //rtY_Right.n_mot; //0x1770;
-
-  if (tspd_i > (uint16_t)tspd_f)
-    tspd_i = (uint16_t)tspd_f;
-
-  fb.spd_1 = 5; //(uint8_t)(tspd & 0xff);
-  fb.spd_2 = (uint8_t)(tspd_i >> 8);
-  fb.spd_3 = (uint8_t)(tspd_i & 0xff);
-
-  fb.dk_00_4 = 0x00;
-  fb.dk_00_5 = 0x00;
-  fb.dk_ff = 0xff;
-
-  fb.checksum = 0x00;
-
-  int i;
-  for (i = 0; i < sizeof(SerialResp) - 1; i++)
-    fb.checksum ^= ((uint8_t*)&fb)[i];
-
-  //#if defined(FEEDBACK_SERIAL_USART3)
-  if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
-    HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&fb, sizeof(SerialResp));
-  }
-  //#endif
-#endif
-}
 
 
 /* =========================== Read Command Function =========================== */
 
-uint16_t max_cmd2 = 0;
+#if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
 
 void readCommand(void) {
 
@@ -825,7 +733,7 @@ void readCommand(void) {
         Nunchuk_Read();
         cmd1 = CLAMP((nunchuk_data[0] - 127) * 8, INPUT_MIN, INPUT_MAX); // x - axis. Nunchuk joystick readings range 30 - 230
         cmd2 = CLAMP((nunchuk_data[1] - 128) * 8, INPUT_MIN, INPUT_MAX); // y - axis
-				
+
 				#ifdef SUPPORT_BUTTONS
 					button1 = (uint8_t)nunchuk_data[5] & 1;
 					button2 = (uint8_t)(nunchuk_data[5] >> 1) & 1;
@@ -850,7 +758,7 @@ void readCommand(void) {
       cmd1 = addDeadBand((pwm_captured_ch1_value - 500) * 2, PWM_DEADBAND, PWM_CH1_MIN, PWM_CH1_MAX, INPUT_MIN, INPUT_MAX);
       #if !defined(VARIANT_SKATEBOARD)
       cmd2 = addDeadBand((pwm_captured_ch2_value - 500) * 2, PWM_DEADBAND, PWM_CH2_MIN, PWM_CH2_MAX, INPUT_MIN, INPUT_MAX);
-      #else      
+      #else
       cmd2 = addDeadBand((pwm_captured_ch2_value - 500) * 2, PWM_DEADBAND, PWM_CH2_MIN, PWM_CH2_MAX, PWM_CH2_OUT_MIN, INPUT_MAX);
       #endif
       #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
@@ -862,34 +770,34 @@ void readCommand(void) {
     #ifdef CONTROL_ADC
       // ADC values range: 0-4095, see ADC-calibration in config.h
       #ifdef ADC1_MID_POT
-        cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MID_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MID_CAL), 0, INPUT_MAX) 
-              +CLAMP((ADC1_MID_CAL - adc_buffer.l_tx2) * INPUT_MIN / (ADC1_MID_CAL - ADC1_MIN_CAL), INPUT_MIN, 0);    // ADC1        
+        cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MID_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MID_CAL), 0, INPUT_MAX)
+              +CLAMP((ADC1_MID_CAL - adc_buffer.l_tx2) * INPUT_MIN / (ADC1_MID_CAL - ADC1_MIN_CAL), INPUT_MIN, 0);    // ADC1
       #else
         cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MIN_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MIN_CAL), 0, INPUT_MAX);    // ADC1
       #endif
 
       #ifdef ADC2_MID_POT
-        cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MID_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MID_CAL), 0, INPUT_MAX)  
-              +CLAMP((ADC2_MID_CAL - adc_buffer.l_rx2) * INPUT_MIN / (ADC2_MID_CAL - ADC2_MIN_CAL), INPUT_MIN, 0);    // ADC2        
+        cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MID_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MID_CAL), 0, INPUT_MAX)
+              +CLAMP((ADC2_MID_CAL - adc_buffer.l_rx2) * INPUT_MIN / (ADC2_MID_CAL - ADC2_MIN_CAL), INPUT_MIN, 0);    // ADC2
       #else
         cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MIN_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MIN_CAL), 0, INPUT_MAX);    // ADC2
       #endif
 
       #ifdef ADC_PROTECT_ENA
-        if (adc_buffer.l_tx2 >= (ADC1_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_tx2 <= (ADC1_MAX_CAL + ADC_PROTECT_THRESH) && 
+        if (adc_buffer.l_tx2 >= (ADC1_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_tx2 <= (ADC1_MAX_CAL + ADC_PROTECT_THRESH) &&
             adc_buffer.l_rx2 >= (ADC2_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_rx2 <= (ADC2_MAX_CAL + ADC_PROTECT_THRESH)) {
-          if (timeoutFlagADC) {                         // Check for previous timeout flag  
+          if (timeoutFlagADC) {                         // Check for previous timeout flag
             if (timeoutCntADC-- <= 0)                   // Timeout de-qualification
-              timeoutFlagADC  = 0;                      // Timeout flag cleared           
+              timeoutFlagADC  = 0;                      // Timeout flag cleared
           } else {
-            timeoutCntADC     = 0;                      // Reset the timeout counter         
+            timeoutCntADC     = 0;                      // Reset the timeout counter
           }
         } else {
           if (timeoutCntADC++ >= ADC_PROTECT_TIMEOUT) { // Timeout qualification
             timeoutFlagADC    = 1;                      // Timeout detected
             timeoutCntADC     = ADC_PROTECT_TIMEOUT;    // Limit timout counter value
           }
-        }   
+        }
       #endif
 
       #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
@@ -901,126 +809,19 @@ void readCommand(void) {
 
     #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
         // Handle received data validity, timeout and fix out-of-sync if necessary
-      #ifdef CONTROL_IBUS    
+      #ifdef CONTROL_IBUS
         for (uint8_t i = 0; i < (IBUS_NUM_CHANNELS * 2); i+=2) {
           ibus_captured_value[(i/2)] = CLAMP(command.channels[i] + (command.channels[i+1] << 8) - 1000, 0, INPUT_MAX); // 1000-2000 -> 0-1000
         }
         cmd1 = CLAMP((ibus_captured_value[0] - 500) * 2, INPUT_MIN, INPUT_MAX);
-        cmd2 = CLAMP((ibus_captured_value[1] - 500) * 2, INPUT_MIN, INPUT_MAX); 
-      #endif
-
-      #ifdef CONTROL_JX_168
-      /*
-         typedef struct{
-           uint8_t  mag_01_1;
-           uint8_t  mag_14;
-           uint8_t  mag_01_2;
-           uint8_t  mag_01_3;
-
-           uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
-
-           uint8_t  dk_c0;
-           uint8_t  dk_18;
-           uint8_t  dk_5a;
-           uint8_t  dk_00_1;
-           uint8_t  dk_01;
-           uint8_t  dk_05_1;
-           uint8_t  dk_64;
-           uint8_t  dk_00_2;
-           uint8_t  dk_0c;
-           uint8_t  dk_00_3;
-           uint8_t  dk_00_4;
-
-           uint8_t  spd_1;
-           uint8_t  spd_2;
-
-           uint8_t  dk_5_2;
-
-           uint8_t  checksum;
-         } SerialCommand;
-      */
-
-      cmd1 = 0;
-
-      uint32_t tmp = (int32_t)(((uint32_t)command.spd_1 << 8) | (uint32_t)command.spd_2);
-      cmd2 = (int16_t)(((uint32_t)N_MOT_MAX * tmp) / (uint32_t)0x03df);
-
-      if(cmd2 > max_cmd2) max_cmd2 = cmd2;
+        cmd2 = CLAMP((ibus_captured_value[1] - 500) * 2, INPUT_MIN, INPUT_MAX);
       #endif
 
 
-      #ifdef CONTROL_M365
-      /*
-        typedef struct {
-          uint8_t mag_55;
-          uint8_t mag_aa;
-
-          uint8_t len_7or9;
-          uint8_t fl_20;
-          uint8_t fl_65;
-          uint8_t fl_00_1;
-          uint8_t fl_04;
-          uint8_t spd;
-          uint8_t brk;
-          uint8_t fl_00_2;
-          uint8_t fl_00_3;
-
-          uint8_t checksum7_l;
-          uint8_t checksum7_h;
-
-          uint8_t checksum9_l;
-          uint8_t checksum9_h;
-        } SerialCommand;
-      */
-
-      int spd = (int)command.spd;
-      int stp = (int)command.brk;
-
-      if(spd > MAX_ACC) spd = MAX_ACC;
-      if(stp > MAX_ACC) stp = MAX_ACC;
-
-      if(spd < MIN_ACC) spd = MIN_ACC;
-      if(stp < MIN_ACC) stp = MIN_ACC;
-
-      uint32_t ac = (uint32_t)spd - MIN_ACC; //0x27 -- MAX_ACC - sniffed max
-      uint32_t st = (uint32_t)stp - MIN_ACC; //0x29 -- MAX_ACC - sniffed max
-
-      uint32_t max_pwm_spd = 0;
-      switch(spd_md){
-        case SPD_MD_1:
-          max_pwm_spd = SPD1;
-          break;
-
-        case SPD_MD_2:
-          max_pwm_spd = SPD2;
-          break;
-
-        case SPD_MD_3:
-          max_pwm_spd = SPD3;
-          break;
-
-        case SPD_MD_4:
-          max_pwm_spd = SPD4;
-          break;
-
-      }
-
-      uint32_t pwm_spd = max_pwm_spd * ac;
-      cmd2 = (int16_t)(pwm_spd / (MAX_ACC - MIN_ACC));
-
-      uint32_t pwm_stp = (uint32_t)N_MOT_MAX * st;
-      cmd1 = (int16_t)(pwm_stp / (MAX_ACC - MIN_ACC));
-
-      if(cmd2 > max_cmd2) max_cmd2 = cmd2;
-      #endif
-
-
-      #if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
-       if (IN_RANGE(command.steer, INPUT_MIN, INPUT_MAX) && IN_RANGE(command.speed, INPUT_MIN, INPUT_MAX)) {
+      if (IN_RANGE(command.steer, INPUT_MIN, INPUT_MAX) && IN_RANGE(command.speed, INPUT_MIN, INPUT_MAX)) {
         cmd1 = command.steer;
         cmd2 = command.speed;
-       }
-      #endif // ifdef CONTROL_JX_168
+      }
 
       #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
         button1 = !HAL_GPIO_ReadPin(BUTTON1_PORT, BUTTON1_PIN);
@@ -1047,7 +848,7 @@ void readCommand(void) {
       timeoutFlagSerial = timeoutFlagSerial_L || timeoutFlagSerial_R;
     #endif
 
-    #ifdef VARIANT_HOVERCAR      
+    #ifdef VARIANT_HOVERCAR
       brakePressed = (uint8_t)(cmd1 > 50);
     #endif
 
@@ -1071,6 +872,7 @@ void readCommand(void) {
     }
 
 }
+#endif
 
 
 /*
@@ -1079,27 +881,27 @@ void readCommand(void) {
  */
 void usart2_rx_check(void)
 {
-  #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)  
+  #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
   static uint32_t old_pos;
   uint32_t pos;
   pos = rx_buffer_L_len - __HAL_DMA_GET_COUNTER(huart2.hdmarx);         // Calculate current position in buffer
   #endif
 
   #if defined(DEBUG_SERIAL_USART2)
-  if (pos != old_pos) {                                                 // Check change in received data		
+  if (pos != old_pos) {                                                 // Check change in received data
     if (pos > old_pos) {                                                // "Linear" buffer mode: check if current position is over previous one
       usart_process_debug(&rx_buffer_L[old_pos], pos - old_pos);        // Process data
     } else {                                                            // "Overflow" buffer mode
-      usart_process_debug(&rx_buffer_L[old_pos], rx_buffer_L_len - old_pos); // First Process data from the end of buffer            
-      if (pos > 0) {                                                    // Check and continue with beginning of buffer				
-        usart_process_debug(&rx_buffer_L[0], pos);                      // Process remaining data 			
+      usart_process_debug(&rx_buffer_L[old_pos], rx_buffer_L_len - old_pos); // First Process data from the end of buffer
+      if (pos > 0) {                                                    // Check and continue with beginning of buffer
+        usart_process_debug(&rx_buffer_L[0], pos);                      // Process remaining data
       }
     }
   }
 	#endif // DEBUG_SERIAL_USART2
 
   #ifdef CONTROL_SERIAL_USART2
-  uint8_t *ptr;	
+  uint8_t *ptr;
   if (pos != old_pos) {                                                 // Check change in received data
     ptr = (uint8_t *)&command_raw;                                      // Initialize the pointer with command_raw address
     if (pos > old_pos && (pos - old_pos) == command_len) {              // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
@@ -1108,7 +910,7 @@ void usart2_rx_check(void)
     } else if ((rx_buffer_L_len - old_pos + pos) == command_len) {      // "Overflow" buffer mode: check if data length equals expected length
       memcpy(ptr, &rx_buffer_L[old_pos], rx_buffer_L_len - old_pos);    // First copy data from the end of buffer
       if (pos > 0) {                                                    // Check and continue with beginning of buffer
-        ptr += rx_buffer_L_len - old_pos;                               // Move to correct position in command_raw		
+        ptr += rx_buffer_L_len - old_pos;                               // Move to correct position in command_raw
         memcpy(ptr, &rx_buffer_L[0], pos);                              // Copy remaining data
       }
       usart_process_command(&command_raw, &command, 2);                 // Process data
@@ -1117,7 +919,7 @@ void usart2_rx_check(void)
   #endif // CONTROL_SERIAL_USART2
 
 	#ifdef SIDEBOARD_SERIAL_USART2
-  uint8_t *ptr;	
+  uint8_t *ptr;
   if (pos != old_pos) {                                                 // Check change in received data
     ptr = (uint8_t *)&Sideboard_L_raw;                                  // Initialize the pointer with Sideboard_raw address
     if (pos > old_pos && (pos - old_pos) == Sideboard_L_len) {          // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
@@ -1126,7 +928,7 @@ void usart2_rx_check(void)
     } else if ((rx_buffer_L_len - old_pos + pos) == Sideboard_L_len) {  // "Overflow" buffer mode: check if data length equals expected length
       memcpy(ptr, &rx_buffer_L[old_pos], rx_buffer_L_len - old_pos);    // First copy data from the end of buffer
       if (pos > 0) {                                                    // Check and continue with beginning of buffer
-        ptr += rx_buffer_L_len - old_pos;                               // Move to correct position in Sideboard_raw		
+        ptr += rx_buffer_L_len - old_pos;                               // Move to correct position in Sideboard_raw
         memcpy(ptr, &rx_buffer_L[0], pos);                              // Copy remaining data
       }
       usart_process_sideboard(&Sideboard_L_raw, &Sideboard_L, 2);       // Process data
@@ -1147,134 +949,33 @@ void usart2_rx_check(void)
  * Check for new data received on USART3 with DMA: refactored function from https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
  * - this function is called for every USART IDLE line detection, in the USART interrupt handler
  */
+#if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
+
 void usart3_rx_check(void)
 {
   #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
   static uint32_t old_pos = 0;
-  uint32_t pos;  
+  uint32_t pos;
   pos = rx_buffer_R_len - __HAL_DMA_GET_COUNTER(huart3.hdmarx);         // Calculate current position in buffer
 
   if (old_pos > pos) old_pos = 0;
   #endif
 
   #if defined(DEBUG_SERIAL_USART3)
-  if (pos != old_pos) {                                                 // Check change in received data		
+  if (pos != old_pos) {                                                 // Check change in received data
     if (pos > old_pos) {                                                // "Linear" buffer mode: check if current position is over previous one
       usart_process_debug(&rx_buffer_R[old_pos], pos - old_pos);        // Process data
     } else {                                                            // "Overflow" buffer mode
-      usart_process_debug(&rx_buffer_R[old_pos], rx_buffer_R_len - old_pos); // First Process data from the end of buffer            
-      if (pos > 0) {                                                    // Check and continue with beginning of buffer				
-        usart_process_debug(&rx_buffer_R[0], pos);                      // Process remaining data 			
+      usart_process_debug(&rx_buffer_R[old_pos], rx_buffer_R_len - old_pos); // First Process data from the end of buffer
+      if (pos > 0) {                                                    // Check and continue with beginning of buffer
+        usart_process_debug(&rx_buffer_R[0], pos);                      // Process remaining data
       }
     }
   }
 	#endif // DEBUG_SERIAL_USART3
 
   #ifdef CONTROL_SERIAL_USART3
-  uint8_t *ptr;	
-
-  #ifdef CONTROL_JX_168
-  static uint8_t st = 0;
-
-  if (pos != old_pos) {                                                 // Check change in received data
-    ptr = (uint8_t *)&command_raw;                                      // Initialize the pointer with command_raw address
-    int i;
-    for(; st < 10 && old_pos < pos; old_pos++) {
-      uint8_t c = rx_buffer_R[old_pos];
-      ptr[st] = c;
-      switch(st) {
-        case 0:
-          if(c == 0x01) st = 1;
-          break;
-
-        case 1:
-          if(c == 0x14) st = 2;
-          else st = 0;
-          break;
-
-        case 2:
-          if(c == 0x01) st = 3;
-          else st = 0;
-          break;
-
-        case 3:
-          if(c == 0x01) st = 10;
-          else st = 0;
-          break;
-
-      };
-    }
-    if (st >= 10) {
-      if (pos > old_pos && (pos - old_pos) >= command_len - 4) {          // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
-        memcpy(&ptr[4], &rx_buffer_R[old_pos], command_len - 4);          // Copy data. This is possible only if command_raw is contiguous! (meaning all the structure members have the same size)
-        usart_process_command(&command_raw, &command, 3);                 // Process data
-        st = 0;
-        old_pos += command_len - 4;
-      } else if ((rx_buffer_R_len - (old_pos - 4) + pos) == command_len) {      // "Overflow" buffer mode: check if data length equals expected length
-        memcpy(ptr, &rx_buffer_R[old_pos], rx_buffer_R_len - old_pos);    // First copy data from the end of buffer
-        if (pos > 0) {                                                    // Check and continue with beginning of buffer
-          ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in command_raw
-          memcpy(ptr, &rx_buffer_R[0], pos);                              // Copy remaining data
-        }
-        usart_process_command(&command_raw, &command, 3);                 // Process data
-        st = 0;
-        old_pos += command_len - 4;
-      }
-    }
-  }
-  #endif // ifdef CONTROL_JX_168
-
-  #ifdef CONTROL_M365
-  static uint8_t st = 0;
-  uint8_t len;
-
-  if (pos != old_pos) {                                                 // Check change in received data
-    ptr = (uint8_t *)&command_raw;                                      // Initialize the pointer with command_raw address
-    int i;
-    for(; st < 10 && old_pos < pos; old_pos++) {
-      uint8_t c = rx_buffer_R[old_pos];
-      ptr[st] = c;
-      switch(st) {
-        case 0:
-          if(c == 0x55) st = 1;
-          break;
-
-        case 1:
-          if(c == 0xaa) st = 2;
-          else st = 0;
-          break;
-
-        case 2:
-          if(c == 0x07 || c == 0x09) {
-            len = c;
-            st = 10;
-          }
-          else st = 0;
-          break;
-
-      };
-    }
-    if (st >= 10) {
-      command_len = len + 2 + 2;
-      if (pos > old_pos && (pos - old_pos) >= command_len) {              // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
-        memcpy(&ptr[3], &rx_buffer_R[old_pos], command_len);              // Copy data. This is possible only if command_raw is contiguous! (meaning all the structure members have the same size)
-        usart_process_command(&command_raw, &command, 3);                 // Process data
-        st = 0;
-        old_pos += command_len;
-      } else if ((rx_buffer_R_len - old_pos + pos) == command_len) {      // "Overflow" buffer mode: check if data length equals expected length
-        memcpy(ptr, &rx_buffer_R[old_pos], rx_buffer_R_len - old_pos);    // First copy data from the end of buffer
-        if (pos > 0) {                                                    // Check and continue with beginning of buffer
-          ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in command_raw
-          memcpy(ptr, &rx_buffer_R[0], pos);                              // Copy remaining data
-        }
-        usart_process_command(&command_raw, &command, 3);                 // Process data
-        st = 0;
-        old_pos += command_len;
-      }
-    }
-  }
-  #endif // ifdef CONTROL_M365
-
+  uint8_t *ptr;
 
   #endif // CONTROL_SERIAL_USART3
 
@@ -1288,7 +989,7 @@ void usart3_rx_check(void)
     } else if ((rx_buffer_R_len - old_pos + pos) == Sideboard_R_len) {  // "Overflow" buffer mode: check if data length equals expected length
       memcpy(ptr, &rx_buffer_R[old_pos], rx_buffer_R_len - old_pos);    // First copy data from the end of buffer
       if (pos > 0) {                                                    // Check and continue with beginning of buffer
-        ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in Sideboard_raw		
+        ptr += rx_buffer_R_len - old_pos;                               // Move to correct position in Sideboard_raw
         memcpy(ptr, &rx_buffer_R[0], pos);                              // Copy remaining data
       }
       usart_process_sideboard(&Sideboard_R_raw, &Sideboard_R, 3);       // Process data
@@ -1297,14 +998,14 @@ void usart3_rx_check(void)
   #endif // SIDEBOARD_SERIAL_USART3
 
   #if defined(DEBUG_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  #ifndef CONTROL_JX_168
   old_pos = pos;                                                        // Update old position
-  #endif // ifdef CONTROL_JX_168
   if (old_pos >= rx_buffer_R_len) {                                     // Check and manually update if we reached end of buffer
     old_pos = 0;
   }
 	#endif
 }
+#endif // #if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
+
 
 /*
  * Process Rx debug user command input
@@ -1314,7 +1015,7 @@ void usart_process_debug(uint8_t *userCommand, uint32_t len)
 {
 	for (; len > 0; len--, userCommand++) {
 		if (*userCommand != '\n' && *userCommand != '\r') { 	// Do not accept 'new line' and 'carriage return' commands
-      consoleLog("-- Command received --\r\n");						
+      consoleLog("-- Command received --\r\n");
 			// handle_input(*userCommand);                      // -> Create this function to handle the user commands
 		}
   }
@@ -1327,6 +1028,7 @@ void usart_process_debug(uint8_t *userCommand, uint32_t len)
  */
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
 
+#if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
 int usart_process_command(SerialCommand *command_in, SerialCommand *command_out, uint8_t usart_idx)
 {
   int ret = sizeof(SerialCommand);
@@ -1353,126 +1055,10 @@ int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
     }
   #endif
 
-  #ifdef CONTROL_JX_168
-    uint8_t checksum = 0;
-/*
-typedef struct{
-  uint8_t  mag_01_1;
-  uint8_t  mag_14;
-  uint8_t  mag_01_2;
-  uint8_t  mag_01_3;
-
-  uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
-
-  uint8_t  dk_c0;
-  uint8_t  dk_18;
-  uint8_t  dk_5a;
-  uint8_t  dk_00_1;
-  uint8_t  dk_01;
-  uint8_t  dk_05;
-  uint8_t  dk_64;
-  uint8_t  dk_00_2;
-  uint8_t  dk_0c;
-  uint8_t  dk_00_3;
-  uint8_t  dk_00_4;
-
-  uint8_t  spd_1;
-  uint8_t  spd_2;
-
-  uint8_t  dk_00_4;
-  uint8_t  dk_00_5;
-  uint8_t  dk_ff;
-
-  uint8_t  checksum;
-} SerialCommand;
-*/
-    if (
-      command_in->mag_01_1 != 0x01
-      || command_in->mag_14 != 0x14
-      || command_in->mag_01_2 != 0x01
-      || command_in->mag_01_3 != 0x01
-    ) {
-      ret = 1;
-    } else {
-      int i;
-      for (i = 0; i < sizeof(SerialCommand); i++)
-        checksum ^= ((uint8_t*)command_in)[i];
-      if (checksum == 0) {
-        *command_out = *command_in;
-        if (usart_idx == 2) {             // Sideboard USART2
-    #ifdef CONTROL_SERIAL_USART2
-          timeoutCntSerial_L  = 0;        // Reset timeout counter
-          timeoutFlagSerial_L = 0;        // Clear timeout flag
-    #endif
-        } else if (usart_idx == 3) {      // Sideboard USART3
-    #ifdef CONTROL_SERIAL_USART3
-          timeoutCntSerial_R  = 0;        // Reset timeout counter
-          timeoutFlagSerial_R = 0;        // Clear timeout flag
-    #endif
-        }
-	    }
-    }
-  #endif
-
-  #ifdef CONTROL_M365
-    uint16_t checksum = 0;
-/*
-typedef struct {
-  uint8_t mag_55;
-  uint8_t mag_aa;
-
-  uint8_t len_7or9;
-  uint8_t fl_20;
-  uint8_t fl_65;
-  uint8_t fl_00_1;
-  uint8_t fl_04;
-  uint8_t spd;
-  uint8_t brk;
-  uint8_t fl_00_2;
-  uint8_t fl_00_3;
-
-  uint8_t checksum7_l;
-  uint8_t checksum7_h;
-
-  uint8_t checksum9_l;
-  uint8_t checksum9_h;
-} SerialCommand;
-*/
-    if (
-      command_in->mag_55 != 0x55
-      || command_in->mag_aa != 0xaa
-      || !(command_in->len_7or9 == 0x07 && command_in->len_7or9 == 0x09)
-    ) {
-      ret = 1;
-    } else {
-      checksum = calculateChecksum((uint8_t*)&(command_in->len_7or9));
-      if ( (command_in->len_7or9 == 7 && 
-            checksum == ((uint16_t)command_in->checksum7_h << 8) + (uint16_t)command_in->checksum7_l
-          ) || (command_in->len_7or9 == 9 && 
-            checksum == ((uint16_t)command_in->checksum9_h << 8) + (uint16_t)command_in->checksum9_l
-          )
-      ) {
-        *command_out = *command_in;
-        if (usart_idx == 2) {             // Sideboard USART2
-    #ifdef CONTROL_SERIAL_USART2
-          timeoutCntSerial_L  = 0;        // Reset timeout counter
-          timeoutFlagSerial_L = 0;        // Clear timeout flag
-    #endif
-        } else if (usart_idx == 3) {      // Sideboard USART3
-    #ifdef CONTROL_SERIAL_USART3
-          timeoutCntSerial_R  = 0;        // Reset timeout counter
-          timeoutFlagSerial_R = 0;        // Clear timeout flag
-    #endif
-        }
-	    }
-    }
-  #endif
-
-  #if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
     uint16_t checksum;
 	  if (command_in->start == SERIAL_START_FRAME) {
   		checksum = (uint16_t)(command_in->start ^ command_in->steer ^ command_in->speed);
-	  	if (command_in->checksum == checksum) {					
+	  	if (command_in->checksum == checksum) {
 		  	*command_out = *command_in;
         if (usart_idx == 2) {             // Sideboard USART2
       #ifdef CONTROL_SERIAL_USART2
@@ -1487,10 +1073,11 @@ typedef struct {
         }
       }
     }
-  #endif
 
   return ret;
 }
+#endif // #if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
+
 #endif
 
 /*
@@ -1499,11 +1086,11 @@ typedef struct {
  */
 #if defined(SIDEBOARD_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART3)
 void usart_process_sideboard(SerialSideboard *Sideboard_in, SerialSideboard *Sideboard_out, uint8_t usart_idx)
-{	
+{
   uint16_t checksum;
 	if (Sideboard_in->start == SERIAL_START_FRAME) {
 		checksum = (uint16_t)(Sideboard_in->start ^ Sideboard_in->roll ^ Sideboard_in->pitch ^ Sideboard_in->yaw ^ Sideboard_in->sensors);
-		if (Sideboard_in->checksum == checksum) {					
+		if (Sideboard_in->checksum == checksum) {
 			*Sideboard_out = *Sideboard_in;
       if (usart_idx == 2) {             // Sideboard USART2
         #ifdef SIDEBOARD_SERIAL_USART2
@@ -1560,7 +1147,7 @@ void sideboardLeds(uint8_t *leds) {
     // Battery Level Indicator: use LED1, LED2, LED3
     if (main_loop_counter % BAT_BLINK_INTERVAL == 0) {              //  | RED (LED1) | YELLOW (LED3) | GREEN (LED2) |
       if (batVoltage < BAT_DEAD) {                                  //  |     0      |       0       |      0       |
-        *leds &= ~LED1_SET & ~LED3_SET & ~LED2_SET;          
+        *leds &= ~LED1_SET & ~LED3_SET & ~LED2_SET;
       } else if (batVoltage < BAT_LVL1) {                           //  |     B      |       0       |      0       |
         *leds ^= LED1_SET;
         *leds &= ~LED3_SET & ~LED2_SET;
@@ -1632,7 +1219,7 @@ void sideboardSensors(uint8_t sensors) {
         case 4:     // COMMUTATION
           rtP_Left.z_ctrlTypSel  = COM_CTRL;
           rtP_Right.z_ctrlTypSel = COM_CTRL;
-          break;    
+          break;
       }
       shortBeepMany(sensor1_index + 1);
     }
@@ -1643,17 +1230,17 @@ void sideboardSensors(uint8_t sensors) {
       if (sensor2_index > 1) { sensor2_index = 0; }
       switch (sensor2_index) {
         case 0:     // FW Disabled
-          rtP_Left.b_fieldWeakEna  = 0; 
+          rtP_Left.b_fieldWeakEna  = 0;
           rtP_Right.b_fieldWeakEna = 0;
           Input_Lim_Init();
           break;
         case 1:     // FW Enabled
-          rtP_Left.b_fieldWeakEna  = 1; 
+          rtP_Left.b_fieldWeakEna  = 1;
           rtP_Right.b_fieldWeakEna = 1;
           Input_Lim_Init();
-          break; 
+          break;
       }
-      shortBeepMany(sensor2_index + 1);            
+      shortBeepMany(sensor2_index + 1);
     }
   #endif
 }
@@ -1666,18 +1253,18 @@ void sideboardSensors(uint8_t sensors) {
   * Max:  32767.99998474121
   * Min: -32768
   * Res:  1.52587890625e-05
-  * 
+  *
   * Inputs:       u     = int16 or int32
   * Outputs:      y     = fixdt(1,32,16)
   * Parameters:   coef  = fixdt(0,16,16) = [0,65535U]
-  * 
-  * Example: 
+  *
+  * Example:
   * If coef = 0.8 (in floating point), then coef = 0.8 * 2^16 = 52429 (in fixed-point)
   * filtLowPass16(u, 52429, &y);
   * yint = (int16_t)(y >> 16); // the integer output is the fixed-point ouput shifted by 16 bits
   */
 void filtLowPass32(int32_t u, uint16_t coef, int32_t *y) {
-  int64_t tmp;  
+  int64_t tmp;
   tmp = ((int64_t)((u << 4) - (*y >> 12)) * coef) >> 4;
   tmp = CLAMP(tmp, -2147483648LL, 2147483647LL);  // Overflow protection: 2147483647LL = 2^31 - 1
   *y = (int32_t)tmp + (*y);
@@ -1688,9 +1275,9 @@ void filtLowPass32(int32_t u, uint16_t coef, int32_t *y) {
   // Parameters:   coef  = fixdt(0,16,16) = [0,65535U]
   // yint = (int16_t)(y >> 20); // the integer output is the fixed-point ouput shifted by 20 bits
   // void filtLowPass32(int16_t u, uint16_t coef, int32_t *y) {
-  //   int32_t tmp;  
-  //   tmp = (int16_t)(u << 4) - (*y >> 16);  
-  //   tmp = CLAMP(tmp, -32768, 32767);  // Overflow protection  
+  //   int32_t tmp;
+  //   tmp = (int16_t)(u << 4) - (*y >> 16);
+  //   tmp = CLAMP(tmp, -32768, 32767);  // Overflow protection
   //   *y  = coef * tmp + (*y);
   // }
 
@@ -1719,7 +1306,7 @@ void rateLimiter16(int16_t u, int16_t rate, int16_t *y) {
 }
 
 
-  /* mixerFcn(rtu_speed, rtu_steer, &rty_speedR, &rty_speedL); 
+  /* mixerFcn(rtu_speed, rtu_steer, &rty_speedR, &rty_speedL);
   * Inputs:       rtu_speed, rtu_steer                  = fixdt(1,16,4)
   * Outputs:      rty_speedR, rty_speedL                = int16_t
   * Parameters:   SPEED_COEFFICIENT, STEER_COEFFICIENT  = fixdt(0,16,14)
@@ -1732,9 +1319,9 @@ void mixerFcn(int16_t rtu_speed, int16_t rtu_steer, int16_t *rty_speedR, int16_t
   prodSpeed   = (int16_t)((rtu_speed * (int16_t)SPEED_COEFFICIENT) >> 14);
   prodSteer   = (int16_t)((rtu_steer * (int16_t)STEER_COEFFICIENT) >> 14);
 
-  tmp         = prodSpeed - prodSteer;  
+  tmp         = prodSpeed - prodSteer;
   tmp         = CLAMP(tmp, -32768, 32767);  // Overflow protection
-  *rty_speedR = (int16_t)(tmp >> 4);        // Convert from fixed-point to int 
+  *rty_speedR = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
   *rty_speedR = CLAMP(*rty_speedR, INPUT_MIN, INPUT_MAX);
 
   tmp         = prodSpeed + prodSteer;
@@ -1749,7 +1336,7 @@ void mixerFcn(int16_t rtu_speed, int16_t rtu_steer, int16_t *rty_speedR, int16_t
 
   /* multipleTapDet(int16_t u, uint32_t timeNow, MultipleTap *x)
   * This function detects multiple tap presses, such as double tapping, triple tapping, etc.
-  * Inputs:       u = int16_t (input signal); timeNow = uint32_t (current time)  
+  * Inputs:       u = int16_t (input signal); timeNow = uint32_t (current time)
   * Outputs:      x->b_multipleTap (get the output here)
   */
 void multipleTapDet(int16_t u, uint32_t timeNow, MultipleTap *x) {
@@ -1758,7 +1345,7 @@ void multipleTapDet(int16_t u, uint32_t timeNow, MultipleTap *x) {
   uint8_t 	b_pulse;
   uint8_t 	z_pulseCnt;
   uint8_t   z_pulseCntRst;
-  uint32_t 	t_time; 
+  uint32_t 	t_time;
 
   // Detect hysteresis
   if (x->b_hysteresis) {

@@ -27,111 +27,22 @@
 
 // Rx Structures USART
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-  #ifdef CONTROL_JX_168
-    typedef struct {
-      uint8_t mag_01_1;
-      uint8_t mag_14;
-      uint8_t mag_01_2;
-      uint8_t mag_01_3;
-
-      uint8_t spd_md;  // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
-
-      uint8_t dk_c0;
-      uint8_t dk_18;
-      uint8_t dk_5a;
-      uint8_t dk_00_1;
-      uint8_t dk_01;
-      uint8_t dk_05_1;
-      uint8_t dk_64;
-      uint8_t dk_00_2;
-      uint8_t dk_0c;
-      uint8_t dk_00_3;
-      uint8_t dk_00_4;
-
-      uint8_t spd_1;
-      uint8_t spd_2;
-
-      uint8_t dk_05_2;
-
-      uint8_t checksum;
-    } SerialCommand;
-
-    typedef struct {
-      uint8_t mag_02;
-      uint8_t mag_0e;
-
-      uint8_t dk_01;
-      uint8_t dk_00_1;
-      uint8_t dk_80;
-      uint8_t dk_00_2;
-      uint8_t dk_00_3;
-
-      uint8_t spd_1;
-      uint8_t spd_2;
-      uint8_t spd_3;
-
-      uint8_t dk_00_4;
-      uint8_t dk_00_5;
-      uint8_t dk_ff;
-
-      uint8_t checksum;
-    } SerialResp;
-  #else
-    #ifdef CONTROL_M365
-      typedef struct {
-        uint8_t mag_55;
-        uint8_t mag_aa;
-
-        uint8_t len_7or9;
-        uint8_t fl_20;
-        uint8_t fl_65;
-        uint8_t fl_00_1;
-        uint8_t fl_04;
-        uint8_t spd;
-        uint8_t brk;
-        uint8_t fl_00_2;
-        uint8_t fl_00_3;
-
-        uint8_t checksum7_l;
-        uint8_t checksum7_h;
-
-        uint8_t checksum9_l;
-        uint8_t checksum9_h;
+  #if !defined(CONTROL_JX_168) && !defined(CONTROL_M365) && !defined(CONTROL_S3)
+    #ifdef CONTROL_IBUS
+      typedef struct{
+        uint8_t  start;
+        uint8_t  type;
+        uint8_t  channels[IBUS_NUM_CHANNELS*2];
+        uint8_t  checksuml;
+        uint8_t  checksumh;
       } SerialCommand;
-
-      typedef struct {
-        uint8_t mag_55;
-        uint8_t mag_aa;
-
-        uint8_t len_06;
-        uint8_t fl_21;
-        uint8_t fl_64;
-        uint8_t fl_00;
-        uint8_t y_led_md; // 0 - off, 2 - on
-        uint8_t leds_cnt; // 0-7
-        uint8_t night_md; // 0x64 - on, 0x00 - off
-        uint8_t dk_00;
-
-        uint8_t checksum_l;
-        uint8_t checksum_h;
-      } SerialResp;
     #else
-      #ifdef CONTROL_IBUS    
-        typedef struct{
-          uint8_t  start;
-          uint8_t  type; 
-          uint8_t  channels[IBUS_NUM_CHANNELS*2];
-          uint8_t  checksuml;
-          uint8_t  checksumh;    
-        } SerialCommand;
-      #else
-        typedef struct{
-          uint16_t  start; 
-          int16_t   steer;
-          int16_t   speed;
-          uint16_t  checksum;    
-        } SerialCommand;
-      #endif
+      typedef struct{
+        uint16_t  start;
+        int16_t   steer;
+        int16_t   speed;
+        uint16_t  checksum;
+      } SerialCommand;
     #endif
   #endif
 #endif

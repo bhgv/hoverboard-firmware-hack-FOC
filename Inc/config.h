@@ -7,51 +7,13 @@
 
 // ############################### e-scooter select ################################
 
-#define CONTROL_JX_168                  // use JX-168 like (Kugoo m2-3-4) controller
+//#include "conf-kugoo-m2.h"
+#include "conf-xiaomi-m365.h"
+//#include "conf-kugoo-s3.h"
+
+//#define CONTROL_JX_168                  // use JX-168 like (Kugoo m2-3-4) controller
 //#define CONTROL_M365                    // use Xiaomi-m365 like controller
 //#define CONTROL_S3                      // use Kugoo S3 (Jilong) controller
-
-
-#if defined(CONTROL_JX_168) || defined(CONTROL_M365) || defined(CONTROL_S3)
-  #define VARIANT_USART
-
-  // #define CONTROL_SERIAL_USART2         // left sensor board cable, disable if ADC or PPM is used! For Arduino control check the hoverSerial.ino
-  // #define FEEDBACK_SERIAL_USART2        // left sensor board cable, disable if ADC or PPM is used!
-
-  #define CONTROL_SERIAL_USART3         // right sensor board cable, disable if I2C (nunchuk or lcd) is used! For Arduino control check the hoverSerial.ino
-  #define FEEDBACK_SERIAL_USART3        // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
-#endif
-
-
-// ############################### Xiaomi m365 defs ################################
-
-#ifdef CONTROL_M365
-  //#define SPD1 0x999   // 1024 * 60 / 100
-  #define SPD1 0x500   // 1024 * 45 / 100
-  #define SPD2 0x800   // 1024 * 45 / 100
-  //#define SPD2 0xccc   // 4096 * 80 / 100
-  #define SPD3 0xb00   // 4096 * 70 / 100
-  #define SPD4 0xfff   // 4096 * 100 / 100 - 1 (max)
-
-  #define LEDS_MAX 8
-
-  #define MAX_ACC 0xa0 //0x78  // 0x78 -- 3.3v  0xB2 -- 5v
-  #define MIN_ACC 0x30 //0x78  // 0x78 -- 3.3v  0xB2 -- 5v
-
-  enum {
-    ST_OFF = 0,
-    ST_ON,
-    ST_LT,
-  };
-
-  enum {
-	  SPD_MD_1 = 0,
-    SPD_MD_2,
-	  SPD_MD_3,
-    SPD_MD_4,
-  };
-#endif
-
 
 // ############################### VARIANT SELECTION ###############################
 // PlatformIO: uncomment desired variant in platformio.ini
@@ -123,7 +85,7 @@
 #define BAT_BLINK_INTERVAL      80        // battery led blink interval (80 loops * 5ms ~= 400ms)
 #define BAT_LVL5                (390 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Green blink:  no beep
 #define BAT_LVL4                (380 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Yellow:       no beep
-#define BAT_LVL3                (370 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Yellow blink: no beep 
+#define BAT_LVL3                (370 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Yellow blink: no beep
 #define BAT_LVL2                (360 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Red:          gently beep at this voltage level. [V*100/cell]. In this case 3.60 V/cell
 #define BAT_LVL1                (350 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Red blink:    fast beep. Your battery is almost empty. Charge now! [V*100/cell]. In this case 3.50 V/cell
 #define BAT_DEAD                (337 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // All leds off: undervoltage poweroff. (while not driving) [V*100/cell]. In this case 3.37 V/cell
@@ -319,9 +281,6 @@
 //  #define STEER_COEFFICIENT   8192      // 0.5f - higher value == stronger. if you do not want any steering, set it to 0.0; 0.0 to 1.0
 //  #define INVERT_R_DIRECTION            // Invert right motor
 //  #define INVERT_L_DIRECTION            // Invert left motor
-
-//#ifndef CONTROL_JX_168
-//#define CONTROL_JX_168                  // use JX-168 like (kugoo m2-3-4) controller
 #endif
 // ######################## END OF VARIANT_USART SETTINGS #########################
 
@@ -386,7 +345,7 @@
   #define PWM_CH1_MAX         1000    // (0 - 1000)
   #define PWM_CH1_MIN        -1000    // (-1000 - 0)
   #define PWM_CH2_MAX         1000    // (0 - 1000)
-  #define PWM_CH2_MIN        -1000    // (-1000 - 0)  
+  #define PWM_CH2_MIN        -1000    // (-1000 - 0)
   #define FILTER              6553    // 0.1f [-] fixdt(0,16,16) lower value == softer filter [0, 65535] = [0.0 - 1.0].
   #define SPEED_COEFFICIENT   16384   // 1.0f [-] fixdt(1,16,14) higher value == stronger. [0, 65535] = [-2.0 - 2.0]. In this case 16384 = 1.0 * 2^14
   #define STEER_COEFFICIENT   16384   // 1.0f [-] fixdt(1,16,14) higher value == stronger. [0, 65535] = [-2.0 - 2.0]. In this case 16384 = 1.0 * 2^14. If you do not want any steering, set it to 0.
@@ -406,7 +365,7 @@
 
 // ################################# VARIANT_IBUS SETTINGS ##############################
 #ifdef VARIANT_IBUS
-/* CONTROL VIA RC REMOTE WITH FLYSKY IBUS PROTOCOL 
+/* CONTROL VIA RC REMOTE WITH FLYSKY IBUS PROTOCOL
 * Connected to Left sensor board cable. Channel 1: steering, Channel 2: speed.
 */
   #define CONTROL_IBUS                                  // use IBUS as input
@@ -463,10 +422,10 @@
 // Communication:         [DONE]
 // Balancing controller:  [TODO]
 #ifdef VARIANT_HOVERBOARD
-  #define SIDEBOARD_SERIAL_USART2       // left sensor board cable, disable if ADC or PPM is used! 
+  #define SIDEBOARD_SERIAL_USART2       // left sensor board cable, disable if ADC or PPM is used!
   #define FEEDBACK_SERIAL_USART2
-  #define SIDEBOARD_SERIAL_USART3       // right sensor board cable, disable if I2C (nunchuk or lcd) is used!        
-  #define FEEDBACK_SERIAL_USART3        
+  #define SIDEBOARD_SERIAL_USART3       // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
+  #define FEEDBACK_SERIAL_USART3
 #endif
 // ######################## END OF VARIANT_HOVERBOARD SETTINGS #########################
 
@@ -539,14 +498,8 @@
   #define USART2_WORDLENGTH       UART_WORDLENGTH_8B      // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B
 #endif
 #if defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
-  #if defined(CONTROL_JX_168) || defined(CONTROL_S3)
-    #define USART3_BAUD 9600                              // UART3 baud rate (short wired cable)
-  #else
-    #ifdef CONTROL_M365
-      #define USART3_BAUD 115200                          // UART3 baud rate (short wired cable)
-    #else
-      #define USART3_BAUD 38400                           // UART3 baud rate (short wired cable)
-    #endif
+  #ifndef USART3_BAUD
+    #define USART3_BAUD 38400                           // UART3 baud rate (short wired cable)
   #endif
 
   #define USART3_WORDLENGTH         UART_WORDLENGTH_8B    // UART_WORDLENGTH_8B or UART_WORDLENGTH_9B

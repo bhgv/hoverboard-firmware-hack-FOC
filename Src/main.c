@@ -127,12 +127,12 @@ static uint8_t sideboard_leds_R;
 
 #ifdef VARIANT_TRANSPOTTER
   extern uint8_t  nunchuk_connected;
-  extern float    setDistance;  
+  extern float    setDistance;
 
   static uint8_t  checkRemote = 0;
   static uint16_t distance;
   static float    steering;
-  static int      distanceErr;  
+  static int      distanceErr;
   static int      lastDistance = 0;
   static uint16_t transpotter_counter = 0;
 #endif
@@ -186,7 +186,7 @@ int main(void) {
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET);
 
   HAL_ADC_Start(&hadc1);
-  HAL_ADC_Start(&hadc2);  
+  HAL_ADC_Start(&hadc2);
 
   poweronMelody();
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
@@ -214,28 +214,28 @@ int main(void) {
         consoleLog("-- Motors enabled --\r\n");
       }
 
-      // ####### VARIANT_HOVERCAR ####### 
+      // ####### VARIANT_HOVERCAR #######
       #if defined(VARIANT_HOVERCAR) || defined(VARIANT_SKATEBOARD) || defined(ELECTRIC_BRAKE_ENABLE)
         uint16_t speedBlend;                                        // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
         speedBlend = (uint16_t)(((CLAMP(speedAvgAbs,10,60) - 10) << 15) / 50); // speedBlend [0,1] is within [10 rpm, 60rpm]
       #endif
 
-      #ifdef VARIANT_HOVERCAR        
+      #ifdef VARIANT_HOVERCAR
         if (speedAvgAbs < 60) {                                     // Check if Hovercar is physically close to standstill to enable Double tap detection on Brake pedal for Reverse functionality
           multipleTapDet(cmd1, HAL_GetTick(), &MultipleTapBrake);   // Brake pedal in this case is "cmd1" variable
         }
-        
+
         if (cmd1 > 30) {                                            // If Brake pedal (cmd1) is pressed, bring to 0 also the Throttle pedal (cmd2) to avoid "Double pedal" driving
           cmd2 = (int16_t)((cmd2 * speedBlend) >> 15);
         }
       #endif
 
-      #ifdef ELECTRIC_BRAKE_ENABLE        
+      #ifdef ELECTRIC_BRAKE_ENABLE
         electricBrake(speedBlend, MultipleTapBrake.b_multipleTap);  // Apply Electric Brake. Only available and makes sense for TORQUE Mode
       #endif
 
-      #ifdef VARIANT_HOVERCAR        
-        if (speedAvg > 0) {                                         // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving by Brake pedal) 
+      #ifdef VARIANT_HOVERCAR
+        if (speedAvg > 0) {                                         // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving by Brake pedal)
           cmd1 = (int16_t)((-cmd1 * speedBlend) >> 15);
         } else {
           cmd1 = (int16_t)(( cmd1 * speedBlend) >> 15);
@@ -243,7 +243,7 @@ int main(void) {
       #endif
 
       #ifdef VARIANT_SKATEBOARD
-        if (cmd2 < 0) {                                           // When Throttle is negative, it acts as brake. This condition is to make sure it goes to 0 as we reach standstill (to avoid Reverse driving) 
+        if (cmd2 < 0) {                                           // When Throttle is negative, it acts as brake. This condition is to make sure it goes to 0 as we reach standstill (to avoid Reverse driving)
           if (speedAvg > 0) {                                     // Make sure the braking is opposite to the direction of motion
             cmd2 = (int16_t)(( cmd2 * speedBlend) >> 15);
           } else {
@@ -267,7 +267,7 @@ int main(void) {
       #endif
 
       // ####### VARIANT_HOVERCAR #######
-      #ifdef VARIANT_HOVERCAR        
+      #ifdef VARIANT_HOVERCAR
         if (!MultipleTapBrake.b_multipleTap) {  // Check driving direction
           speed = steer + speed;                // Forward driving: in this case steer = Brake, speed = Throttle
         } else {
@@ -372,7 +372,7 @@ int main(void) {
               nunchuk_connected = 1;
             }
           }
-        }   
+        }
       #endif
 
       #ifdef SUPPORT_LCD
@@ -435,9 +435,9 @@ int main(void) {
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
       #if defined(CONTROL_JX_168) || defined(CONTROL_S3) || defined(CONTROL_M365)
-      if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
-        sendRespUart();
-      }
+        if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
+          sendRespUart();
+        }
       #else
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
@@ -451,7 +451,7 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART2)
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
             Feedback.cmdLed         = (uint16_t)sideboard_leds_L;
-            Feedback.checksum       = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum       = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas
                                                ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 
             HAL_UART_Transmit_DMA(&huart2, (uint8_t *)&Feedback, sizeof(Feedback));
@@ -460,14 +460,14 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART3)
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed         = (uint16_t)sideboard_leds_R;
-            Feedback.checksum       = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum       = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas
                                                ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 
             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
         #endif
       }
-      #endif // ifdef CONTROL_JX_168
+      #endif // #if defined(CONTROL_JX_168) || defined(CONTROL_S3) || defined(CONTROL_M365)
     #endif
 
     // ####### POWEROFF BY POWER-BUTTON #######
@@ -480,7 +480,7 @@ int main(void) {
       enable        = 0;
       buzzerFreq    = 8;
       buzzerPattern = 1;
-    } else if (timeoutFlagADC || timeoutFlagSerial || timeoutCnt > TIMEOUT) { // beep in case of ADC timeout, Serial timeout or General timeout - fast beep      
+    } else if (timeoutFlagADC || timeoutFlagSerial || timeoutCnt > TIMEOUT) { // beep in case of ADC timeout, Serial timeout or General timeout - fast beep
       buzzerFreq    = 24;
       buzzerPattern = 1;
     } else if (TEMP_WARNING_ENABLE && board_temp_deg_c >= TEMP_WARNING) {  // beep if mainboard gets hot
