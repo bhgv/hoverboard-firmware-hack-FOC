@@ -60,57 +60,47 @@ void sendRespUart(void) {
 //  SerialResp fb;
 /*
 typedef struct {
-  uint8_t mag_02;
-  uint8_t mag_0e;
+  uint8_t mag_03c;
+  uint8_t mag_07;
 
-  uint8_t dk_01;
+  uint8_t status;     // 0 - blocked, 1 - normal, 3 - configs accepted
+  uint8_t svc_flags;  // 1 - "M", 2 - "ECU", 4 - "!"
+  uint8_t current;
+  uint8_t spd_h;  // time between hal pulses
+  uint8_t spd_l;  //
+
   uint8_t dk_00_1;
-  uint8_t dk_80;
   uint8_t dk_00_2;
-  uint8_t dk_00_3;
 
-  uint8_t spd_1;
-  uint8_t spd_2;
-  uint8_t spd_3;
-
-  uint8_t dk_00_4;
-  uint8_t dk_00_5;
-  uint8_t dk_ff;
-
-  uint8_t checksum;
+  uint8_t checksum_h;  // 6
+  uint8_t checksum_l;  // 7
 } SerialResp;
 */
 
-  fb.mag_02 = 0x02;
-  fb.mag_0e = 0x0e;
+  fb.mag_03c = 0x3c;
+  fb.mag_07 = 0x07;
 
-  fb.dk_01 = 0x01;
-  fb.dk_00_1 = 0x00;
-  fb.dk_80 = 0x80;
-  fb.dk_00_2 = 0x00;
-  fb.dk_00_3 = 0x00;
+  fb.status = 0x01;
+  fb.svc_flags = 0x00;
+  fb.current = 0x80;
 
   if (rtY_Left.n_mot > max_n_mot) max_n_mot = rtY_Left.n_mot;
 
-  double   tspd_f = 10. * 1000000.0 / (200. * (double)rtY_Left.n_mot);
-  uint16_t tspd_i = 0x1770; //rtY_Right.n_mot; //0x1770;
+  uint16_t tspd_i = rtY_Left.n_mot;
 
-  if (tspd_i > (uint16_t)tspd_f)
-    tspd_i = (uint16_t)tspd_f;
+  fb.spd_l = (uint8_t)(tspd_i & 0xff);
+  fb.spd_h = (uint8_t)(tspd_i >> 8);
 
-  fb.spd_1 = 5; //(uint8_t)(tspd & 0xff);
-  fb.spd_2 = (uint8_t)(tspd_i >> 8);
-  fb.spd_3 = (uint8_t)(tspd_i & 0xff);
+  fb.dk_00_1 = 0x00;
+  fb.dk_00_2 = 0x00;
 
-  fb.dk_00_4 = 0x00;
-  fb.dk_00_5 = 0x00;
-  fb.dk_ff = 0xff;
-
-  fb.checksum = 0x00;
-
+  uint16_t sum = 0;
   int i;
-  for (i = 0; i < sizeof(SerialResp) - 1; i++)
-    fb.checksum ^= ((uint8_t*)&fb)[i];
+  for (i = 0; i < sizeof(SerialResp) - 2; i++)
+    sum += ((uint8_t*)&fb)[i];
+
+  fb.checksum_h = (uint8_t)(sum >> 8);
+  fb.checksum_l = (uint8_t)(sum & 0xff);
 
   //#if defined(FEEDBACK_SERIAL_USART3)
   if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
