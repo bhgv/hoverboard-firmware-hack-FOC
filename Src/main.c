@@ -188,6 +188,10 @@ int main(void) {
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
 
+  #ifdef CONTROL_M365
+    HAL_HalfDuplex_EnableReceiver(&huart3);                     // half duplex to Rx
+  #endif
+
   poweronMelody();
   HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
 

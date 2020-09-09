@@ -54,10 +54,10 @@ static uint8_t spd_md = SPD_MD_1;
 
 /* =========================== xiaomi-m365 calculateChecksum Function =========== */
 uint16_t calculateChecksum(uint8_t *data) {
-  uint8_t len = data[0] + 2;
+  uint8_t len = data[2] + 2;
   uint16_t sum = 0;
   for (int i = 0; i < len; i++)
-    sum += data[i];
+    sum += data[2+i];
   sum ^= 0xFFFF;
   return sum;
 }
@@ -69,18 +69,60 @@ SerialResp fb;
 uint16_t max_n_mot = 0;
 
 void sendRespUart(void) {
+/*
+typedef struct {
+    uint8_t mag_55;
+    uint8_t mag_aa;
 
+    uint8_t len_06;
+    uint8_t fl_21;
+    uint8_t fl_64;
+    uint8_t fl_00;
+    uint8_t y_led_md; // 0 - off, 2 - on
+    uint8_t leds_cnt; // 0-7
+    uint8_t night_md; // 0x64 - on, 0x00 - off
+    uint8_t dk_00;
 
+    uint8_t checksum_l;
+    uint8_t checksum_h;
+} SerialResp;
+*/
 
+  fb.mag_55 = 0x55;
+  fb.mag_aa = 0xaa;
+
+  fb.len_06 = 0x06;
+  fb.fl_21  = 0x21;
+  fb.fl_64  = 0x64;
+  fb.fl_00  = 0x00;
+
+  fb.y_led_md = 0; // 0 - off, 2 - on
+  fb.leds_cnt = 5; // 0-7
+  fb.night_md = 0; // 0x64 - on, 0x00 - off
+  fb.dk_00  = 0;
+
+  uint16_t checksum = calculateChecksum((uint8_t*)&fb);
+
+  fb.checksum_h = (uint8_t)(checksum >> 8);
+  fb.checksum_l = (uint8_t)(checksum & 0xff);
+
+  while (__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {}
+
+  HAL_HalfDuplex_EnableTransmitter(&huart3);                  // half duplex to Tx
+  int i;
+  for (i = 0; i < 3; i++)
+    HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&fb, sizeof(SerialResp));
+  HAL_HalfDuplex_EnableReceiver(&huart3);                     // half duplex to Rx
 }
 
 
 
 void poweroffPressCheck(void) {
-    if (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
-      enable = 0;                                             // disable motors
-      poweroff();                                             // release power-latch
-    }
+  static int isOn = 0;
+  if (!HAL_GPIO_ReadPin(BUTTON_PORT, BUTTON_PIN)) {
+    enable = 0;  // disable motors
+    poweroff();  // release power-latch
+  }
 }
 
 
@@ -298,7 +340,7 @@ typedef struct {
   ) {
     ret = 1;
   } else {
-    checksum = calculateChecksum((uint8_t*)&(command_in->len_7or9));
+    checksum = calculateChecksum((uint8_t*)command_in);
     if ( (command_in->len_7or9 == 7 &&
           checksum == ((uint16_t)command_in->checksum7_h << 8) + (uint16_t)command_in->checksum7_l
         ) || (command_in->len_7or9 == 9 &&
