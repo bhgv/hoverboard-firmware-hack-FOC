@@ -6,7 +6,11 @@
 
 #define VARIANT_USART
 
-// #define CONTROL_SERIAL_USART2      // left cable, disable if ADC or PPM is used!
+#define _4x4_
+
+#ifdef _4x4_
+#define CONTROL_SERIAL_USART2      // left cable
+#endif
 // #define FEEDBACK_SERIAL_USART2     // left cable, disable if ADC or PPM is used!
 
 #define CONTROL_SERIAL_USART3         // right cable, disable if I2C is used!
@@ -14,6 +18,9 @@
 
 #define USART3_BAUD 9600                              // UART3 baud rate (short wired cable)
 
+#ifdef _4x4_
+#define USART2_BAUD 9600                              // UART2 baud rate (long wired cable)
+#endif
 
 
 typedef struct {

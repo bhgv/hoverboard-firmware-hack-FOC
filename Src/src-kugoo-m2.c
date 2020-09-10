@@ -173,11 +173,13 @@ void readCommand(void) {
   #endif
 
   #if defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
+/*
     if (timeoutCntSerial_L++ >= SERIAL_TIMEOUT) {     // Timeout qualification
       timeoutFlagSerial_L = 1;                        // Timeout detected
       timeoutCntSerial_L  = SERIAL_TIMEOUT;           // Limit timout counter value
     }
     timeoutFlagSerial = timeoutFlagSerial_L;
+*/
   #endif
 
   #if defined(CONTROL_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
