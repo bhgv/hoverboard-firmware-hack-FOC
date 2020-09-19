@@ -50,6 +50,10 @@ extern uint8_t  ctrlModReq;             // Final control mode request
 extern uint8_t rx_buffer_R[]; // USART Rx DMA circular buffer
 extern uint32_t rx_buffer_R_len;
 
+extern int16_t curR_DC, curL_DC;
+
+uint8_t  poles = 30;
+uint16_t wl_diam_inch = 80;
 
 /* =========================== Send Response Function =========================== */
 SerialResp fb;
@@ -58,28 +62,6 @@ uint16_t max_n_mot = 0;
 
 void sendRespUart(void) {
 //  SerialResp fb;
-/*
-typedef struct {
-  uint8_t mag_02;
-  uint8_t mag_0e;
-
-  uint8_t dk_01;
-  uint8_t dk_00_1;
-  uint8_t dk_80;
-  uint8_t dk_00_2;
-  uint8_t dk_00_3;
-
-  uint8_t spd_1;
-  uint8_t spd_2;
-  uint8_t spd_3;
-
-  uint8_t dk_00_4;
-  uint8_t dk_00_5;
-  uint8_t dk_ff;
-
-  uint8_t checksum;
-} SerialResp;
-*/
 
   fb.mag_02 = 0x02;
   fb.mag_0e = 0x0e;
@@ -92,13 +74,16 @@ typedef struct {
 
   if (rtY_Left.n_mot > max_n_mot) max_n_mot = rtY_Left.n_mot;
 
-  double   tspd_f = 10. * 1000000.0 / (200. * (double)rtY_Left.n_mot);
-  uint16_t tspd_i = 0x1770; //rtY_Right.n_mot; //0x1770;
+//  double   tspd_f = 10. * 1000000.0 / (200. * (double)rtY_Left.n_mot);
+  double    tspd_f = 60. * 60. *
+                     3.1415 * ((double)wl_diam_inch / 10.) * 0.025 * 0.001 /
+                     ((double)poles * (double)rtY_Left.n_mot * 0.000001);
+  uint16_t  tspd_i = 0x1770; //rtY_Right.n_mot; //0x1770;
 
   if (tspd_i > (uint16_t)tspd_f)
     tspd_i = (uint16_t)tspd_f;
 
-  fb.spd_1 = 5; //(uint8_t)(tspd & 0xff);
+  fb.curr = (uint8_t)((uint32_t)10 * ((uint32_t)ABS(curL_DC) + (uint32_t)ABS(curR_DC)) / A2BIT_CONV);
   fb.spd_2 = (uint8_t)(tspd_i >> 8);
   fb.spd_3 = (uint8_t)(tspd_i & 0xff);
 
@@ -132,40 +117,14 @@ uint16_t max_cmd2 = 0;
 
 void readCommand(void) {
 #if defined(CONTROL_SERIAL_USART2) || defined(CONTROL_SERIAL_USART3)
-  /*
-    typedef struct{
-      uint8_t  mag_01_1;
-      uint8_t  mag_14;
-      uint8_t  mag_01_2;
-      uint8_t  mag_01_3;
+    poles = command.poles;
 
-      uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
-
-      uint8_t  dk_c0;
-      uint8_t  dk_18;
-      uint8_t  dk_5a;
-      uint8_t  dk_00_1;
-      uint8_t  dk_01;
-      uint8_t  dk_05_1;
-      uint8_t  dk_64;
-      uint8_t  dk_00_2;
-      uint8_t  dk_0c;
-      uint8_t  dk_00_3;
-      uint8_t  dk_00_4;
-
-      uint8_t  spd_1;
-      uint8_t  spd_2;
-
-      uint8_t  dk_5_2;
-
-      uint8_t  checksum;
-    } SerialCommand;
-  */
+    wl_diam_inch = ((uint16_t)command.diam_hi << 8) + (uint16_t)command.diam_lo;
 
     cmd1 = 0;
 
     uint32_t tmp = (int32_t)(((uint32_t)command.spd_1 << 8) | (uint32_t)command.spd_2);
-    cmd2 = (int16_t)(((uint32_t)N_MOT_MAX * tmp) / (uint32_t)0x03df);
+    cmd2 = (int16_t)(((uint32_t)N_MOT_MAX * tmp) / (uint32_t)991 /*0x03df*/);
 
     if(cmd2 > max_cmd2) max_cmd2 = cmd2;
 
@@ -290,42 +249,13 @@ int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
   int ret = sizeof(SerialCommand);
 
   uint8_t checksum = 0;
-/*
-typedef struct{
-  uint8_t  mag_01_1;
-  uint8_t  mag_14;
-  uint8_t  mag_01_2;
-  uint8_t  mag_01_3;
 
-  uint8_t  spd_md; // 0x05 - 1 spd, 0x0a - 2 spd, 0x0f - 3 spd
 
-  uint8_t  dk_c0;
-  uint8_t  dk_18;
-  uint8_t  dk_5a;
-  uint8_t  dk_00_1;
-  uint8_t  dk_01;
-  uint8_t  dk_05;
-  uint8_t  dk_64;
-  uint8_t  dk_00_2;
-  uint8_t  dk_0c;
-  uint8_t  dk_00_3;
-  uint8_t  dk_00_4;
-
-  uint8_t  spd_1;
-  uint8_t  spd_2;
-
-  uint8_t  dk_00_4;
-  uint8_t  dk_00_5;
-  uint8_t  dk_ff;
-
-  uint8_t  checksum;
-} SerialCommand;
-*/
   if (
     command_in->mag_01_1 != 0x01
     || command_in->mag_14 != 0x14
     || command_in->mag_01_2 != 0x01
-    || command_in->mag_01_3 != 0x01
+    || (command_in->mag_01_3 != 0x01 && command_in->mag_01_3 != 0x02)
   ) {
     ret = 1;
   } else {
