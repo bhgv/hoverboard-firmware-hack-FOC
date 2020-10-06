@@ -104,6 +104,7 @@ typedef struct {
 
   //#if defined(FEEDBACK_SERIAL_USART3)
   if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
+
     HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&fb, sizeof(SerialResp));
   }
   //#endif

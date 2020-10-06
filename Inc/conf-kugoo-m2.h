@@ -6,10 +6,21 @@
 
 #define VARIANT_USART
 
-//#define _4x4_
+#define _4x4_
 
 #ifdef _4x4_
-#define CONTROL_SERIAL_USART2      // left cable
+
+//#define _4x4_MASTER
+
+# ifdef _4x4_MASTER
+#  define CONTROL_SERIAL_USART2      // left cable
+# endif
+
+# ifndef _4x4_MASTER
+#  define VARIANT_ADC
+//#  define CONTROL_ADC
+# endif
+
 #endif
 // #define FEEDBACK_SERIAL_USART2     // left cable, disable if ADC or PPM is used!
 

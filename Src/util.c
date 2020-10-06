@@ -128,16 +128,16 @@ uint16_t VirtAddVarTab[NB_OF_VAR] = {0x1300};     // Dummy virtual address to av
 //------------------------------------------------------------------------
 // Local variables
 //------------------------------------------------------------------------
-static int16_t INPUT_MAX;             // [-] Input target maximum limitation
-static int16_t INPUT_MIN;             // [-] Input target minimum limitation
+int16_t INPUT_MAX;             // [-] Input target maximum limitation
+int16_t INPUT_MIN;             // [-] Input target minimum limitation
 
 #ifdef CONTROL_ADC
   static uint8_t  cur_spd_valid = 0;
   static uint8_t  adc_cal_valid = 0;
-  static uint16_t ADC1_MIN_CAL = ADC1_MIN;
-  static uint16_t ADC1_MAX_CAL = ADC1_MAX;
-  static uint16_t ADC2_MIN_CAL = ADC2_MIN;
-  static uint16_t ADC2_MAX_CAL = ADC2_MAX;
+  uint16_t ADC1_MIN_CAL = ADC1_MIN;
+  uint16_t ADC1_MAX_CAL = ADC1_MAX;
+  uint16_t ADC2_MIN_CAL = ADC2_MIN;
+  uint16_t ADC2_MAX_CAL = ADC2_MAX;
   #ifdef ADC1_MID_POT
   static uint16_t ADC1_MID_CAL = ADC1_MID;
   #else

@@ -34,6 +34,11 @@ extern int16_t  cmd2;                   // normalized input value. -1000 to 1000
 extern uint16_t timeoutCntSerial_R;  	// Timeout counter for Rx Serial command
 extern uint8_t  timeoutFlagSerial_R;  	// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
+#ifdef CONTROL_SERIAL_USART2
+extern uint16_t timeoutCntSerial_L;  	// Timeout counter for Rx Serial command
+extern uint8_t  timeoutFlagSerial_L;  	// Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
+#endif
+
 extern uint8_t timeoutFlagADC;          // Timeout Flag for ADC Protection:    0 = OK, 1 = Problem detected (line disconnected or wrong ADC data)
 extern uint8_t timeoutFlagSerial;       // Timeout Flag for Rx Serial command: 0 = OK, 1 = Problem detected (line disconnected or wrong Rx data)
 
@@ -51,6 +56,18 @@ extern uint8_t rx_buffer_R[]; // USART Rx DMA circular buffer
 extern uint32_t rx_buffer_R_len;
 
 extern int16_t curR_DC, curL_DC;
+
+extern int16_t INPUT_MAX;             // [-] Input target maximum limitation
+extern int16_t INPUT_MIN;             // [-] Input target minimum limitation
+
+#ifdef CONTROL_ADC
+  extern uint16_t ADC1_MIN_CAL;
+  extern uint16_t ADC1_MAX_CAL;
+  extern uint16_t ADC2_MIN_CAL;
+  extern uint16_t ADC2_MAX_CAL;
+
+  extern volatile adc_buf_t adc_buffer;
+#endif
 
 uint8_t  poles = 30;
 uint16_t wl_diam_inch = 80;
@@ -157,6 +174,61 @@ void readCommand(void) {
     ctrlModReq  = ctrlModReqRaw;                                      // Follow the Mode request
   }
 
+
+
+
+
+
+
+
+
+  #ifdef CONTROL_ADC
+    // ADC values range: 0-4095, see ADC-calibration in config.h
+    #ifdef ADC1_MID_POT
+      cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MID_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MID_CAL), 0, INPUT_MAX)
+            +CLAMP((ADC1_MID_CAL - adc_buffer.l_tx2) * INPUT_MIN / (ADC1_MID_CAL - ADC1_MIN_CAL), INPUT_MIN, 0);    // ADC1
+    #else
+      cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MIN_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MIN_CAL), 0, INPUT_MAX);    // ADC1
+    #endif
+
+    #ifdef ADC2_MID_POT
+      cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MID_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MID_CAL), 0, INPUT_MAX)
+            +CLAMP((ADC2_MID_CAL - adc_buffer.l_rx2) * INPUT_MIN / (ADC2_MID_CAL - ADC2_MIN_CAL), INPUT_MIN, 0);    // ADC2
+    #else
+      cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MIN_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MIN_CAL), 0, INPUT_MAX);    // ADC2
+    #endif
+
+    #ifdef ADC_PROTECT_ENA
+      if (adc_buffer.l_tx2 >= (ADC1_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_tx2 <= (ADC1_MAX_CAL + ADC_PROTECT_THRESH) &&
+          adc_buffer.l_rx2 >= (ADC2_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_rx2 <= (ADC2_MAX_CAL + ADC_PROTECT_THRESH)) {
+        if (timeoutFlagADC) {                         // Check for previous timeout flag
+          if (timeoutCntADC-- <= 0)                   // Timeout de-qualification
+            timeoutFlagADC  = 0;                      // Timeout flag cleared
+        } else {
+          timeoutCntADC     = 0;                      // Reset the timeout counter
+        }
+      } else {
+        if (timeoutCntADC++ >= ADC_PROTECT_TIMEOUT) { // Timeout qualification
+          timeoutFlagADC    = 1;                      // Timeout detected
+          timeoutCntADC     = ADC_PROTECT_TIMEOUT;    // Limit timout counter value
+        }
+      }
+    #endif
+
+    #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
+      button1 = !HAL_GPIO_ReadPin(BUTTON1_PORT, BUTTON1_PIN);
+      button2 = !HAL_GPIO_ReadPin(BUTTON2_PORT, BUTTON2_PIN);
+    #endif
+    timeoutCnt = 0;
+  #endif
+
+
+
+
+
+
+
+
 }
 
 
@@ -210,7 +282,7 @@ void usart3_rx_check(void)
           break;
 
         case 3:
-          if(c == 0x01) st = 10;
+          if(c == 0x01 || c == 0x02) st = 10;
           else st = 0;
           break;
 
@@ -250,7 +322,6 @@ int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
 
   uint8_t checksum = 0;
 
-
   if (
     command_in->mag_01_1 != 0x01
     || command_in->mag_14 != 0x14
@@ -273,6 +344,11 @@ int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
   #ifdef CONTROL_SERIAL_USART3
         timeoutCntSerial_R  = 0;        // Reset timeout counter
         timeoutFlagSerial_R = 0;        // Clear timeout flag
+    #ifdef _4x4_MASTER
+        if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
+          HAL_UART_Transmit_DMA(&huart2, (uint8_t *)command_in, sizeof(SerialCommand));
+        }
+    #endif
   #endif
       }
     }

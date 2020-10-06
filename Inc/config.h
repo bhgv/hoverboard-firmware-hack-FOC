@@ -217,7 +217,9 @@
 
 // #define DEBUG_SERIAL_USART2          // left sensor board cable, disable if ADC or PPM is used!
 #if defined(VARIANT_ADC)
-  #define DEBUG_SERIAL_USART3          // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
+  #if !defined(CONTROL_JX_168) 
+    #define DEBUG_SERIAL_USART3          // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
+  #endif
 #endif
 
 #ifndef VARIANT_TRANSPOTTER
