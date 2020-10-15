@@ -72,6 +72,10 @@ extern int16_t INPUT_MIN;             // [-] Input target minimum limitation
 uint8_t  poles = 30;
 uint16_t wl_diam_inch = 80;
 
+
+int32_t k_brk = 0;
+
+
 /* =========================== Send Response Function =========================== */
 SerialResp fb;
 
@@ -174,29 +178,47 @@ void readCommand(void) {
     ctrlModReq  = ctrlModReqRaw;                                      // Follow the Mode request
   }
 
-
-
-
-
-
-
-
-
   #ifdef CONTROL_ADC
     // ADC values range: 0-4095, see ADC-calibration in config.h
     #ifdef ADC1_MID_POT
       cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MID_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MID_CAL), 0, INPUT_MAX)
             +CLAMP((ADC1_MID_CAL - adc_buffer.l_tx2) * INPUT_MIN / (ADC1_MID_CAL - ADC1_MIN_CAL), INPUT_MIN, 0);    // ADC1
     #else
-      cmd1 = CLAMP((adc_buffer.l_tx2 - ADC1_MIN_CAL) * INPUT_MAX / (ADC1_MAX_CAL - ADC1_MIN_CAL), 0, INPUT_MAX);    // ADC1
+      static int32_t tmp_s = 0;
+      static int32_t tmp_i = 0;
+
+      tmp_s += adc_buffer.l_tx2;
+      tmp_i++;
+
+      if (tmp_i >= 10) {
+        /*cmd1*/
+        k_brk = CLAMP(
+                    ((tmp_s / tmp_i) - (int32_t)ADC1_MIN_CAL) 
+                      * (int32_t)INPUT_MAX 
+                      / ((int32_t)ADC1_MAX_CAL - (int32_t)ADC1_MIN_CAL), 
+                    (int32_t)0, 
+                    (int32_t)INPUT_MAX
+                  );    // ADC1
+        tmp_i = 0;
+        tmp_s = 0;
+      }
+//      if (cmd1 < 5) {
+//        k_brk = 0;
+//      } else {
+//        k_brk = (uint32_t)cmd1; //(float)cmd1 / (float)INPUT_MAX;
+//      }
     #endif
 
+    cmd1 = 0;
+
+#if 0 //{}
     #ifdef ADC2_MID_POT
       cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MID_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MID_CAL), 0, INPUT_MAX)
             +CLAMP((ADC2_MID_CAL - adc_buffer.l_rx2) * INPUT_MIN / (ADC2_MID_CAL - ADC2_MIN_CAL), INPUT_MIN, 0);    // ADC2
     #else
       cmd2 = CLAMP((adc_buffer.l_rx2 - ADC2_MIN_CAL) * INPUT_MAX / (ADC2_MAX_CAL - ADC2_MIN_CAL), 0, INPUT_MAX);    // ADC2
     #endif
+#endif //{}
 
     #ifdef ADC_PROTECT_ENA
       if (adc_buffer.l_tx2 >= (ADC1_MIN_CAL - ADC_PROTECT_THRESH) && adc_buffer.l_tx2 <= (ADC1_MAX_CAL + ADC_PROTECT_THRESH) &&
@@ -215,20 +237,8 @@ void readCommand(void) {
       }
     #endif
 
-    #if defined(SUPPORT_BUTTONS_LEFT) || defined(SUPPORT_BUTTONS_RIGHT)
-      button1 = !HAL_GPIO_ReadPin(BUTTON1_PORT, BUTTON1_PIN);
-      button2 = !HAL_GPIO_ReadPin(BUTTON2_PORT, BUTTON2_PIN);
-    #endif
     timeoutCnt = 0;
   #endif
-
-
-
-
-
-
-
-
 }
 
 

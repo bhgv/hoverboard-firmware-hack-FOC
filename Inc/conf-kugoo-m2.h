@@ -17,8 +17,15 @@
 # endif
 
 # ifndef _4x4_MASTER
-#  define VARIANT_ADC
-//#  define CONTROL_ADC
+  #define VARIANT_ADC
+//  #define CONTROL_ADC
+  #define INVERT_R_DIRECTION            // Invert right motor
+  #define INVERT_L_DIRECTION            // Invert left motor
+
+
+  #define ELECTRIC_BRAKE_ENABLE         // [-] Flag to enable electric brake and replace the motor "freewheel" with a constant braking when the input torque request is 0. Only available and makes sense for TORQUE mode.
+  #define ELECTRIC_BRAKE_MAX    100     // (0, 500) Maximum electric brake to be applied when input torque request is 0 (pedal fully released).
+  #define ELECTRIC_BRAKE_THRES  120     // (0, 500) Threshold below at which the electric brake starts engaging.
 # endif
 
 #endif

@@ -221,7 +221,7 @@ int main(void) {
       // ####### VARIANT_HOVERCAR #######
       #if defined(VARIANT_HOVERCAR) || defined(VARIANT_SKATEBOARD) || defined(ELECTRIC_BRAKE_ENABLE)
         uint16_t speedBlend;                                        // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
-        speedBlend = (uint16_t)(((CLAMP(speedAvgAbs,10,60) - 10) << 15) / 50); // speedBlend [0,1] is within [10 rpm, 60rpm]
+        speedBlend = (uint16_t)(((uint32_t)(CLAMP((uint32_t)speedAvgAbs,10,60) - 10) << 15) / 50); // speedBlend [0,1] is within [10 rpm, 60rpm]
       #endif
 
       #ifdef VARIANT_HOVERCAR
@@ -234,15 +234,17 @@ int main(void) {
         }
       #endif
 
+#ifndef CONTROL_JX_168 //{}
       #ifdef ELECTRIC_BRAKE_ENABLE
         electricBrake(speedBlend, MultipleTapBrake.b_multipleTap);  // Apply Electric Brake. Only available and makes sense for TORQUE Mode
       #endif
+#endif //{}
 
-      #ifdef VARIANT_HOVERCAR
+      #if defined(VARIANT_HOVERCAR)
         if (speedAvg > 0) {                                         // Make sure the Brake pedal is opposite to the direction of motion AND it goes to 0 as we reach standstill (to avoid Reverse driving by Brake pedal)
-          cmd1 = (int16_t)((-cmd1 * speedBlend) >> 15);
+          cmd1 = (int16_t)((-(int32_t)cmd1 * speedBlend) >> 15);
         } else {
-          cmd1 = (int16_t)(( cmd1 * speedBlend) >> 15);
+          cmd1 = (int16_t)(( (int32_t)cmd1 * speedBlend) >> 15);
         }
       #endif
 
@@ -270,6 +272,14 @@ int main(void) {
         standstillHold(&speed);                 // Apply Standstill Hold functionality. Only available and makes sense for VOLTAGE or TORQUE Mode
       #endif
 
+      #if 0 //{} def CONTROL_JX_168
+        if (1){ //!MultipleTapBrake.b_multipleTap) {  // Check driving direction
+          speed = steer + speed;                // Forward driving: in this case steer = Brake, speed = Throttle
+        } else {
+          speed = steer - speed;                // Reverse driving: in this case steer = Brake, speed = Throttle
+        }
+      #endif
+
       // ####### VARIANT_HOVERCAR #######
       #ifdef VARIANT_HOVERCAR
         if (!MultipleTapBrake.b_multipleTap) {  // Check driving direction
@@ -282,7 +292,7 @@ int main(void) {
       // ####### MIXER #######
       // speedR = CLAMP((int)(speed * SPEED_COEFFICIENT -  steer * STEER_COEFFICIENT), INPUT_MIN, INPUT_MA);
       // speedL = CLAMP((int)(speed * SPEED_COEFFICIENT +  steer * STEER_COEFFICIENT), INPUT_MIN, INPUT_MA);
-      mixerFcn(speed << 4, steer << 4, &speedR, &speedL);   // This function implements the equations above
+      mixerFcn((int32_t)speed << 4, (int32_t)steer << 4, &speedR, &speedL);   // This function implements the equations above
 
       // ####### SET OUTPUTS (if the target change is less than +/- 100) #######
       if ((speedL > lastSpeedL-100 && speedL < lastSpeedL+100) && (speedR > lastSpeedR-100 && speedR < lastSpeedR+100)) {
@@ -481,9 +491,9 @@ int main(void) {
     if ((TEMP_POWEROFF_ENABLE && board_temp_deg_c >= TEMP_POWEROFF && speedAvgAbs < 20) || (batVoltage < BAT_DEAD && speedAvgAbs < 20)) {  // poweroff before mainboard burns OR low bat 3
       poweroff();
     } else if (rtY_Left.z_errCode || rtY_Right.z_errCode) {     // disable motors and beep in case of Motor error - fast beep
-      enable        = 0;
-      buzzerFreq    = 8;
-      buzzerPattern = 1;
+//      enable        = 0;
+//      buzzerFreq    = 8;
+//      buzzerPattern = 1;
     } else if (timeoutFlagADC || timeoutFlagSerial || timeoutCnt > TIMEOUT) { // beep in case of ADC timeout, Serial timeout or General timeout - fast beep
       buzzerFreq    = 24;
       buzzerPattern = 1;
