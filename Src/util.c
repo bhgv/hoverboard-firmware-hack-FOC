@@ -1332,7 +1332,7 @@ void mixerFcn(int32_t rtu_speed, int32_t rtu_steer, int16_t *rty_speedR, int16_t
     *rty_speedL = CLAMP(*rty_speedL, INPUT_MIN, INPUT_MAX);
   } else {
     *rty_speedR = -(int16_t)((int32_t)6 * (int32_t)rtY_Right.n_mot * k_brk / INPUT_MAX);
-    *rty_speedL = -(int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
+    *rty_speedL =  (int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
   }
 }
 
