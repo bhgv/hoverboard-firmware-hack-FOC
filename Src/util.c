@@ -155,8 +155,8 @@ static int16_t timeoutCntADC   = 0;  // Timeout counter for ADC Protection
 #endif
 
 #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
-static uint8_t rx_buffer_L[SERIAL_BUFFER_SIZE];	// USART Rx DMA circular buffer
-static uint32_t rx_buffer_L_len = ARRAY_LEN(rx_buffer_L);
+uint8_t rx_buffer_L[SERIAL_BUFFER_SIZE];	// USART Rx DMA circular buffer
+uint32_t rx_buffer_L_len = ARRAY_LEN(rx_buffer_L);
 #endif
 #if defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
 uint16_t timeoutCntSerial_L  = 0;  		// Timeout counter for Rx Serial command
@@ -186,6 +186,13 @@ static uint32_t Sideboard_R_len = sizeof(Sideboard_R);
 SerialCommand command;
 SerialCommand command_raw;
 uint32_t command_len = sizeof(command);
+
+#if defined(CONTROL_SERIAL_USART2) && defined(_4x4_MASTER)
+SerialResp command2;
+SerialResp command2_raw;
+uint32_t command2_len = sizeof(command2);
+#endif
+
   #ifdef CONTROL_IBUS
   static uint16_t ibus_chksum;
   static uint16_t ibus_captured_value[IBUS_NUM_CHANNELS];
@@ -880,6 +887,8 @@ void readCommand(void) {
  * Check for new data received on USART2 with DMA: refactored function from https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
  * - this function is called for every USART IDLE line detection, in the USART interrupt handler
  */
+
+#if !defined(_4x4_)
 void usart2_rx_check(void)
 {
   #if defined(DEBUG_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
@@ -944,7 +953,7 @@ void usart2_rx_check(void)
   }
 	#endif
 }
-
+#endif
 
 /*
  * Check for new data received on USART3 with DMA: refactored function from https://github.com/MaJerle/stm32-usart-uart-dma-rx-tx
@@ -1331,9 +1340,15 @@ void mixerFcn(int32_t rtu_speed, int32_t rtu_steer, int16_t *rty_speedR, int16_t
     *rty_speedL = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
     *rty_speedL = CLAMP(*rty_speedL, INPUT_MIN, INPUT_MAX);
   } else {
+#if defined(_4x4_MASTER)
+    *rty_speedR =  (int16_t)((int32_t)6 * (int32_t)rtY_Right.n_mot * k_brk / INPUT_MAX);
+    *rty_speedL = -(int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
+  }
+#else
     *rty_speedR = -(int16_t)((int32_t)6 * (int32_t)rtY_Right.n_mot * k_brk / INPUT_MAX);
     *rty_speedL =  (int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
   }
+#endif
 }
 
 

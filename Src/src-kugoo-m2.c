@@ -49,11 +49,22 @@ extern SerialCommand command;
 extern SerialCommand command_raw;
 extern uint32_t command_len;
 
+#if defined(CONTROL_SERIAL_USART2) && defined(_4x4_MASTER)
+extern SerialResp command2;
+extern SerialResp command2_raw;
+extern uint32_t command2_len;
+#endif
+
 extern uint8_t  ctrlModReqRaw;
 extern uint8_t  ctrlModReq;             // Final control mode request
 
 extern uint8_t rx_buffer_R[]; // USART Rx DMA circular buffer
 extern uint32_t rx_buffer_R_len;
+
+#ifdef CONTROL_SERIAL_USART2
+extern uint8_t rx_buffer_L[]; // USART Rx DMA circular buffer
+extern uint32_t rx_buffer_L_len;
+#endif
 
 extern int16_t curR_DC, curL_DC;
 
@@ -74,6 +85,9 @@ uint16_t wl_diam_inch = 80;
 
 
 int32_t k_brk = 0;
+
+
+int usart2_process_command(SerialResp *command_in, SerialResp *command_out, uint8_t usart_idx);
 
 
 /* =========================== Send Response Function =========================== */
@@ -108,8 +122,9 @@ void sendRespUart(void) {
   fb.spd_2 = (uint8_t)(tspd_i >> 8);
   fb.spd_3 = (uint8_t)(tspd_i & 0xff);
 
-  fb.dk_00_4 = 0x00;
-  fb.dk_00_5 = 0x00;
+  int16_t tmp_k_brk = (int16_t)k_brk;
+  fb.dk_00_4 = (uint8_t)(tmp_k_brk >> 8);   //0x00;
+  fb.dk_00_5 = (uint8_t)(tmp_k_brk & 0xff); //0x00;
   fb.dk_ff = 0xff;
 
   fb.checksum = 0x00;
@@ -369,6 +384,121 @@ int usart_process_command(SerialCommand *command_in, SerialCommand *command_out,
 
 
 
+// -- master - UART2 -- VVV --
 
+void usart2_rx_check(void)
+{
+  #if defined(CONTROL_SERIAL_USART2)
+  static uint32_t old_pos = 0;
+  uint32_t pos;
+  pos = rx_buffer_L_len - __HAL_DMA_GET_COUNTER(huart2.hdmarx);         // Calculate current position in buffer
+
+  if (old_pos > pos) old_pos = 0;
+
+  uint8_t *ptr;
+
+  static uint8_t st = 0;
+
+//  fb.mag_02 = 0x02;
+//  fb.mag_0e = 0x0e;
+
+  if (pos != old_pos) {                                                 // Check change in received data
+    ptr = (uint8_t *)&command2_raw;                                      // Initialize the pointer with command_raw address
+    int i;
+    for(; st < 10 && old_pos < pos; old_pos++) {
+      uint8_t c = rx_buffer_L[old_pos];
+      ptr[st] = c;
+      switch(st) {
+        case 0:
+          if(c == 0x02) st = 1;
+          break;
+
+        case 1:
+          if(c == 0x0e) st = 10;
+          else st = 0;
+          break;
+
+      };
+    }
+    if (st >= 10) {
+      if (pos > old_pos && (pos - old_pos) >= command2_len - 2) {          // "Linear" buffer mode: check if current position is over previous one AND data length equals expected length
+        memcpy(&ptr[2], &rx_buffer_L[old_pos], command2_len - 2);          // Copy data. This is possible only if command_raw is contiguous! (meaning all the structure members have the same size)
+        usart2_process_command(&command2_raw, &command2, 2);                 // Process data
+        st = 0;
+        old_pos += command2_len - 2;
+      } else if ((rx_buffer_L_len - (old_pos - 2) + pos) == command2_len) {      // "Overflow" buffer mode: check if data length equals expected length
+        memcpy(ptr, &rx_buffer_L[old_pos], rx_buffer_L_len - old_pos);    // First copy data from the end of buffer
+        if (pos > 0) {                                                    // Check and continue with beginning of buffer
+          ptr += rx_buffer_L_len - old_pos;                               // Move to correct position in command_raw
+          memcpy(ptr, &rx_buffer_L[0], pos);                              // Copy remaining data
+        }
+        usart2_process_command(&command2_raw, &command2, 2);                 // Process data
+        st = 0;
+        old_pos += command2_len - 2;
+      }
+    }
+  }
+
+  if (old_pos >= rx_buffer_L_len) {                                     // Check and manually update if we reached end of buffer
+    old_pos = 0;
+  }
+  #endif // CONTROL_SERIAL_USART2
+}
+
+
+int usart2_process_command(SerialResp *command_in, SerialResp *command_out, uint8_t usart_idx)
+{
+  int ret = sizeof(SerialCommand);
+
+  uint8_t checksum = 0;
+
+/*
+typedef struct {
+  uint8_t mag_02;  // begin of packet
+  uint8_t mag_0e;  // len of packet
+
+  uint8_t dk_01;   // 
+  uint8_t dk_00_1; // bt6 - E001, bt4 - E003, bt3 - E005
+  uint8_t dk_80;   // bt5 - brk endswitch status, bt4 - display conn error (E007)
+  uint8_t dk_00_2;
+  uint8_t dk_00_3;
+
+  uint8_t curr;    // motor current * 10
+  uint8_t spd_2;
+  uint8_t spd_3;
+
+  uint8_t dk_00_4;
+  uint8_t dk_00_5;
+  uint8_t dk_ff;
+
+  uint8_t checksum;
+} SerialResp;
+*/
+
+  if (
+    command_in->mag_02 != 0x02
+    || command_in->mag_0e != 0x0e
+  ) {
+    ret = 1;
+  } else {
+    int i;
+    for (i = 0; i < sizeof(SerialResp); i++)
+      checksum ^= ((uint8_t*)command_in)[i];
+    if (checksum == 0) {
+      *command_out = *command_in;
+
+      k_brk = ((uint32_t)command_in->dk_00_4 << 8) | ((uint32_t)command_in->dk_00_5 & 0xff);
+
+      if (usart_idx == 2) {             // Sideboard USART2
+  #ifdef CONTROL_SERIAL_USART2
+        timeoutCntSerial_L  = 0;        // Reset timeout counter
+        timeoutFlagSerial_L = 0;        // Clear timeout flag
+  #endif
+      }
+    }
+  }
+
+  return ret;
+}
 
 #endif // #ifdef CONTROL_JX_168
