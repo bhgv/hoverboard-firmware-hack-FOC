@@ -122,7 +122,7 @@ void sendRespUart(void) {
   fb.spd_2 = (uint8_t)(tspd_i >> 8);
   fb.spd_3 = (uint8_t)(tspd_i & 0xff);
 
-  int16_t tmp_k_brk = (int16_t)k_brk;
+  uint16_t tmp_k_brk = (uint16_t)k_brk;
   fb.dk_00_4 = (uint8_t)(tmp_k_brk >> 8);   //0x00;
   fb.dk_00_5 = (uint8_t)(tmp_k_brk & 0xff); //0x00;
   fb.dk_ff = 0xff;
@@ -202,15 +202,25 @@ void readCommand(void) {
       static int32_t tmp_s = 0;
       static int32_t tmp_i = 0;
 
-      tmp_s += adc_buffer.l_tx2;
+      static int32_t tmp_adc = 0, tmp_adc_o = 0;
+
+      tmp_adc = adc_buffer.l_tx2;
+      tmp_s += tmp_adc;
       tmp_i++;
 
-      if (tmp_i >= 10) {
+      if (tmp_i >= 5) {
         /*cmd1*/
-        k_brk = CLAMP(
-                    ((tmp_s / tmp_i) - (int32_t)ADC1_MIN_CAL) 
+        tmp_adc = (tmp_s / tmp_i);
+        if (tmp_adc > INPUT_MAX - 20 && tmp_adc - tmp_adc_o > (INPUT_MAX - INPUT_MIN) / 5)
+          tmp_adc = tmp_adc_o + (INPUT_MAX - INPUT_MIN) / 5;
+        tmp_adc_o = tmp_adc;
+
+        int32_t k_brk_tmp =
+                      (tmp_adc - (int32_t)ADC1_MIN_CAL) 
                       * (int32_t)INPUT_MAX 
-                      / ((int32_t)ADC1_MAX_CAL - (int32_t)ADC1_MIN_CAL), 
+                      / ((int32_t)ADC1_MAX_CAL - (int32_t)ADC1_MIN_CAL);
+        k_brk = CLAMP(
+                    k_brk_tmp,
                     (int32_t)0, 
                     (int32_t)INPUT_MAX
                   );    // ADC1
@@ -487,7 +497,7 @@ typedef struct {
     if (checksum == 0) {
       *command_out = *command_in;
 
-      k_brk = ((uint32_t)command_in->dk_00_4 << 8) | ((uint32_t)command_in->dk_00_5 & 0xff);
+      k_brk = (((uint32_t)command_in->dk_00_4 << 8) | ((uint32_t)command_in->dk_00_5 & 0xff)) & 0xffff;
 
       if (usart_idx == 2) {             // Sideboard USART2
   #ifdef CONTROL_SERIAL_USART2

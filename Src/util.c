@@ -658,6 +658,10 @@ void electricBrake(uint16_t speedBlend, uint8_t reverseDir) {
 /* =========================== Poweroff Functions =========================== */
 
 void poweroff(void) {
+#if defined(_4x4_) && defined(_4x4_debug)
+  return;
+#endif
+
 	buzzerPattern = 0;
 	enable = 0;
 	consoleLog("-- Motors disabled --\r\n");
@@ -1316,39 +1320,74 @@ void rateLimiter16(int16_t u, int16_t rate, int16_t *y) {
 }
 
 
+static void blink_stop_light() {
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+  static int _i = 0;
+  static int _di = 1;
+  if (k_brk <= STOP_MIN_NUM_TO) {
+    STOP_SIGN_TIM->CCR4 = _i >> 2;
+  } else {
+    STOP_SIGN_TIM->CCR4 = STOP_SIGN_TIM_PERIOD * 80 / 100;
+  }
+  _i += _di;
+  if (_i > 150 << 2 || _i < 0) {
+    _di = -_di;
+    _i += _di;
+  }
+#endif
+}
+
+
   /* mixerFcn(rtu_speed, rtu_steer, &rty_speedR, &rty_speedL);
   * Inputs:       rtu_speed, rtu_steer                  = fixdt(1,16,4)
   * Outputs:      rty_speedR, rty_speedL                = int16_t
   * Parameters:   SPEED_COEFFICIENT, STEER_COEFFICIENT  = fixdt(0,16,14)
   */
 void mixerFcn(int32_t rtu_speed, int32_t rtu_steer, int16_t *rty_speedR, int16_t *rty_speedL) {
-  if (k_brk <= 5) {
+  if (k_brk <= STOP_MIN_NUM_TO) {
     int32_t prodSpeed;
-    int32_t prodSteer;
+    //int32_t prodSteer;
     int32_t tmp;
 
     prodSpeed   = ((int32_t)rtu_speed * SPEED_COEFFICIENT) >> 14;
-    prodSteer   = ((int32_t)rtu_steer * STEER_COEFFICIENT) >> 14;
+    //prodSteer   = ((int32_t)rtu_steer * STEER_COEFFICIENT) >> 14;
+    #define prodSteer 0
 
     tmp         = prodSpeed - prodSteer;
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+    tmp         = 0x101 * tmp / 0x100;
+#endif
+#if defined(_4x4_)
+    tmp         = 7 * tmp / 16; 
+#endif
     tmp         = CLAMP(tmp, -32768, 32767);  // Overflow protection
     *rty_speedR = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
     *rty_speedR = CLAMP(*rty_speedR, INPUT_MIN, INPUT_MAX);
 
     tmp         = prodSpeed + prodSteer;
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+    tmp         = 0x101 * tmp / 0x100;
+#endif
+#if defined(_4x4_)
+    tmp         = 7 * tmp / 16; 
+#endif
     tmp         = CLAMP(tmp, -32768, 32767);  // Overflow protection
     *rty_speedL = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
     *rty_speedL = CLAMP(*rty_speedL, INPUT_MIN, INPUT_MAX);
   } else {
 #if defined(_4x4_MASTER)
-    *rty_speedR =  (int16_t)((int32_t)6 * (int32_t)rtY_Right.n_mot * k_brk / INPUT_MAX);
-    *rty_speedL = -(int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
+    *rty_speedR =  (int16_t)((int32_t)/*6*/0x51 * (int32_t)rtY_Right.n_mot * k_brk / (INPUT_MAX * 0x10));
+    *rty_speedL = -(int16_t)((int32_t)/*6*/0x51 * (int32_t)rtY_Left.n_mot  * k_brk / (INPUT_MAX * 0x10));
   }
 #else
-    *rty_speedR = -(int16_t)((int32_t)6 * (int32_t)rtY_Right.n_mot * k_brk / INPUT_MAX);
-    *rty_speedL =  (int16_t)((int32_t)6 * (int32_t)rtY_Left.n_mot  * k_brk / INPUT_MAX);
+    *rty_speedR = -(int16_t)((int32_t)/*6*/0x50 * (int32_t)rtY_Right.n_mot * k_brk / (INPUT_MAX * 0x10));
+    *rty_speedL =  (int16_t)((int32_t)/*6*/0x50 * (int32_t)rtY_Left.n_mot  * k_brk / (INPUT_MAX * 0x10));
   }
+
+  blink_stop_light();
 #endif
+
+  #undef prodSteer
 }
 
 

@@ -39,6 +39,9 @@ pb10 usart3 dma1 channel2/3
 #include "config.h"
 #include "setup.h"
 
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+TIM_HandleTypeDef htim_stopsign;
+#endif
 TIM_HandleTypeDef htim_right;
 TIM_HandleTypeDef htim_left;
 ADC_HandleTypeDef hadc1;
@@ -440,12 +443,25 @@ void MX_GPIO_Init(void) {
   HAL_GPIO_Init(DCLINK_PORT, &GPIO_InitStruct);
 
   //Analog in
+#if !defined(_4x4_) //|| !defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#endif
+#if !defined(_4x4_) || !defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#endif
 
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+
+#if defined(_4x4_) //|| !defined(_4x4_MASTER)
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#endif
+#if defined(_4x4_) && defined(_4x4_MASTER)
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+#endif
 
   GPIO_InitStruct.Pin = LEFT_TIM_UH_PIN;
   HAL_GPIO_Init(LEFT_TIM_UH_PORT, &GPIO_InitStruct);
@@ -490,8 +506,64 @@ void MX_TIM_Init(void) {
 
   TIM_MasterConfigTypeDef sMasterConfig;
   TIM_OC_InitTypeDef sConfigOC;
-  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig; 
   TIM_SlaveConfigTypeDef sTimConfig;
+
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+  __HAL_RCC_TIM5_CLK_ENABLE();
+
+  htim_stopsign.Instance = STOP_SIGN_TIM;
+  htim_stopsign.Init.Prescaler = 0;
+  
+	htim_stopsign.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim_stopsign.Init.Period = STOP_SIGN_TIM_PERIOD; //65535;
+  htim_stopsign.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim_stopsign.Init.RepetitionCounter = 0;
+#if 0
+	HAL_TIM_PWM_Init(&htim_stopsign);
+
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_ENABLE;
+  HAL_TIMEx_MasterConfigSynchronization(&htim_stopsign, &sMasterConfig);
+
+  HAL_TIM_PWM_Start(&htim_stopsign, TIM_CHANNEL_4);
+#else
+  HAL_TIM_Base_Init(&htim_stopsign);
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;//the default clock is the internal clock from the APBx, using this function
+  HAL_TIM_ConfigClockSource(&htim_stopsign, &sClockSourceConfig);
+
+  HAL_TIM_PWM_Init(&htim_stopsign);
+
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE; //TIM_MASTERSLAVEMODE_ENABLE;
+  HAL_TIMEx_MasterConfigSynchronization(&htim_stopsign, &sMasterConfig);
+
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 300; /* 50% duty cycle is 538, set to 0 initially*///
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE; //TIM_OCFAST_ENABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  HAL_TIM_PWM_ConfigChannel(&htim_stopsign, &sConfigOC, TIM_CHANNEL_4);
+
+//  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig;
+
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_ENABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_ENABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_1;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_ENABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_ENABLE;
+  HAL_TIMEx_ConfigBreakDeadTime(&htim_stopsign, &sBreakDeadTimeConfig);
+
+  HAL_TIM_Base_Start(&htim_stopsign); //Starts the TIM Base generation
+  HAL_TIM_PWM_Start(&htim_stopsign, TIM_CHANNEL_4); //Starts the PWM signal generation
+#endif
+#endif
 
   htim_right.Instance               = RIGHT_TIM;
   htim_right.Init.Prescaler         = 0;
@@ -694,10 +766,12 @@ void MX_ADC2_Init(void) {
   sConfig.Rank    = 4;
   HAL_ADC_ConfigChannel(&hadc2, &sConfig);
 
+#if !defined(_4x4_) // !defined(_4x4_MASTER)
   sConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;
   sConfig.Channel = ADC_CHANNEL_3;  // pa3 uart-l-rx
   sConfig.Rank    = 5;
   HAL_ADC_ConfigChannel(&hadc2, &sConfig);
+#endif
 
   hadc2.Instance->CR2 |= ADC_CR2_DMA;
   __HAL_ADC_ENABLE(&hadc2);
