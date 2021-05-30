@@ -443,25 +443,27 @@ void MX_GPIO_Init(void) {
   HAL_GPIO_Init(DCLINK_PORT, &GPIO_InitStruct);
 
   //Analog in
-#if !defined(_4x4_) //|| !defined(_4x4_MASTER)
+//{}1 #if !defined(_4x4_) //|| !defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-#endif
-#if !defined(_4x4_) || !defined(_4x4_MASTER)
+//{}1 #endif
+//{}1 #if !defined(_4x4_) || !defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-#endif
+//{}1 #endif
 
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 
-#if defined(_4x4_) //|| !defined(_4x4_MASTER)
+#if defined(_4x4_) && !defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #endif
+/*
 #if defined(_4x4_) && defined(_4x4_MASTER)
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #endif
+*/
 
   GPIO_InitStruct.Pin = LEFT_TIM_UH_PIN;
   HAL_GPIO_Init(LEFT_TIM_UH_PORT, &GPIO_InitStruct);
@@ -562,6 +564,8 @@ void MX_TIM_Init(void) {
 
   HAL_TIM_Base_Start(&htim_stopsign); //Starts the TIM Base generation
   HAL_TIM_PWM_Start(&htim_stopsign, TIM_CHANNEL_4); //Starts the PWM signal generation
+
+  STOP_SIGN_TIM->CCR4 = 0;
 #endif
 #endif
 

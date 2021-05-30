@@ -177,9 +177,9 @@ int main(void) {
   MX_GPIO_Init();
   MX_TIM_Init();
   MX_ADC1_Init();
-#if !defined(_4x4_) || !defined(_4x4_MASTER)
+//{}1 #if !defined(_4x4_) || !defined(_4x4_MASTER)
   MX_ADC2_Init();
-#endif
+//{}1 #endif
   BLDC_Init();        // BLDC Controller Init
   Input_Lim_Init();   // Input Limitations Init
   Input_Init();       // Input Init
@@ -187,9 +187,9 @@ int main(void) {
   HAL_GPIO_WritePin(OFF_PORT, OFF_PIN, GPIO_PIN_SET);
 
   HAL_ADC_Start(&hadc1);
-#if !defined(_4x4_) || !defined(_4x4_MASTER)
+//{}1 #if !defined(_4x4_) || !defined(_4x4_MASTER)
   HAL_ADC_Start(&hadc2);
-#endif
+//{}1 #endif
 
   #ifdef CONTROL_M365
     HAL_HalfDuplex_EnableReceiver(&huart3);                     // half duplex to Rx

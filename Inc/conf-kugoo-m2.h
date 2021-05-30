@@ -9,6 +9,7 @@
 #define _4x4_
 
 //#define _4x4_debug
+//#define _4x4_no_break
 
 #ifdef _4x4_
 
@@ -18,7 +19,9 @@
 #  define CONTROL_SERIAL_USART2      // left cable
 # endif
 
-  #define STOP_MIN_NUM_TO       15
+#define STOP_MIN_NUM_TO       45
+
+#define INT_SPEED_MULTIPLER   7
 
 # ifndef _4x4_MASTER
   #define VARIANT_ADC

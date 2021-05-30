@@ -159,7 +159,7 @@ void readCommand(void) {
 
     cmd1 = 0;
 
-    uint32_t tmp = (int32_t)(((uint32_t)command.spd_1 << 8) | (uint32_t)command.spd_2);
+    uint32_t tmp = (uint32_t)(((uint32_t)command.spd_1 << 8) | (uint32_t)command.spd_2);
     cmd2 = (int16_t)(((uint32_t)N_MOT_MAX * tmp) / (uint32_t)991 /*0x03df*/);
 
     if(cmd2 > max_cmd2) max_cmd2 = cmd2;
@@ -193,6 +193,7 @@ void readCommand(void) {
     ctrlModReq  = ctrlModReqRaw;                                      // Follow the Mode request
   }
 
+#if !defined(_4x4_MASTER)
   #ifdef CONTROL_ADC
     // ADC values range: 0-4095, see ADC-calibration in config.h
     #ifdef ADC1_MID_POT
@@ -215,6 +216,7 @@ void readCommand(void) {
           tmp_adc = tmp_adc_o + (INPUT_MAX - INPUT_MIN) / 5;
         tmp_adc_o = tmp_adc;
 
+#ifndef _4x4_no_break
         int32_t k_brk_tmp =
                       (tmp_adc - (int32_t)ADC1_MIN_CAL) 
                       * (int32_t)INPUT_MAX 
@@ -224,6 +226,9 @@ void readCommand(void) {
                     (int32_t)0, 
                     (int32_t)INPUT_MAX
                   );    // ADC1
+#else
+        k_brk = 0;
+#endif
         tmp_i = 0;
         tmp_s = 0;
       }
@@ -264,6 +269,9 @@ void readCommand(void) {
 
     timeoutCnt = 0;
   #endif
+#else
+  cmd1 = 0;
+#endif
 }
 
 
@@ -455,7 +463,7 @@ void usart2_rx_check(void)
   #endif // CONTROL_SERIAL_USART2
 }
 
-
+#if defined(_4x4_MASTER)
 int usart2_process_command(SerialResp *command_in, SerialResp *command_out, uint8_t usart_idx)
 {
   int ret = sizeof(SerialCommand);
@@ -495,9 +503,11 @@ typedef struct {
     for (i = 0; i < sizeof(SerialResp); i++)
       checksum ^= ((uint8_t*)command_in)[i];
     if (checksum == 0) {
-      *command_out = *command_in;
+      //*command_out = *command_in;
 
       k_brk = (((uint32_t)command_in->dk_00_4 << 8) | ((uint32_t)command_in->dk_00_5 & 0xff)) & 0xffff;
+      if (k_brk > STOP_MIN_NUM_TO)
+        k_brk = 51 * k_brk / 50;
 
       if (usart_idx == 2) {             // Sideboard USART2
   #ifdef CONTROL_SERIAL_USART2
@@ -510,5 +520,6 @@ typedef struct {
 
   return ret;
 }
+#endif
 
 #endif // #ifdef CONTROL_JX_168

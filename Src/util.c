@@ -1320,20 +1320,38 @@ void rateLimiter16(int16_t u, int16_t rate, int16_t *y) {
 }
 
 
-static void blink_stop_light() {
-#if defined(_4x4_) && !defined(_4x4_MASTER)
   static int _i = 0;
   static int _di = 1;
+
+static void blink_stop_light() {
+#if defined(_4x4_) && !defined(_4x4_MASTER)
+//  static int _i = 0;
+//  static int _di = 1;
+
   if (k_brk <= STOP_MIN_NUM_TO) {
-    STOP_SIGN_TIM->CCR4 = _i >> 2;
+/**/
+//    if (_i <= 1)
+//      STOP_SIGN_TIM->CCR4 = 1; //(int)STOP_SIGN_TIM_PERIOD * 1 / 100;
+//    else
+      STOP_SIGN_TIM->CCR4 = 0; //STOP_SIGN_TIM_PERIOD;
+/**/
   } else {
-    STOP_SIGN_TIM->CCR4 = STOP_SIGN_TIM_PERIOD * 80 / 100;
+    STOP_SIGN_TIM->CCR4 = (int)STOP_SIGN_TIM_PERIOD * 50 / 100;
   }
   _i += _di;
-  if (_i > 150 << 2 || _i < 0) {
-    _di = -_di;
-    _i += _di;
+  if (_i > 500 || _i < 0) {
+    if (_i > 500)
+      _di = -1;
+    else if (_i <= 0) {
+      _di = 1;
+      _i = 0;
+    }
+//    if (k_brk <= STOP_MIN_NUM_TO) {
+//      STOP_SIGN_TIM->CCR4 = _di >= 0 ? 0 : 0;
+//    }
   }
+  if (_i < 0)
+    _i = 0;
 #endif
 }
 
@@ -1355,10 +1373,14 @@ void mixerFcn(int32_t rtu_speed, int32_t rtu_steer, int16_t *rty_speedR, int16_t
 
     tmp         = prodSpeed - prodSteer;
 #if defined(_4x4_) && !defined(_4x4_MASTER)
-    tmp         = 0x101 * tmp / 0x100;
+    //tmp         = 0x71 * tmp / 0x70;
 #endif
 #if defined(_4x4_)
-    tmp         = 7 * tmp / 16; 
+  #if defined(_4x4_MASTER)
+    tmp         = INT_SPEED_MULTIPLER * tmp / 16; 
+  #else
+    tmp         = (INT_SPEED_MULTIPLER + 1) * tmp / 16; 
+  #endif
 #endif
     tmp         = CLAMP(tmp, -32768, 32767);  // Overflow protection
     *rty_speedR = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
@@ -1366,18 +1388,22 @@ void mixerFcn(int32_t rtu_speed, int32_t rtu_steer, int16_t *rty_speedR, int16_t
 
     tmp         = prodSpeed + prodSteer;
 #if defined(_4x4_) && !defined(_4x4_MASTER)
-    tmp         = 0x101 * tmp / 0x100;
+    //tmp         = 0x71 * tmp / 0x70;
 #endif
 #if defined(_4x4_)
-    tmp         = 7 * tmp / 16; 
+  #if defined(_4x4_MASTER)
+    tmp         = INT_SPEED_MULTIPLER * tmp / 16; 
+  #else
+    tmp         = (INT_SPEED_MULTIPLER + 1) * tmp / 16; 
+  #endif
 #endif
-    tmp         = CLAMP(tmp, -32768, 32767);  // Overflow protection
+    tmp         = CLAMP(tmp, -32768, 32767);  // Overf7low protection
     *rty_speedL = (int16_t)(tmp >> 4);        // Convert from fixed-point to int
     *rty_speedL = CLAMP(*rty_speedL, INPUT_MIN, INPUT_MAX);
   } else {
 #if defined(_4x4_MASTER)
-    *rty_speedR =  (int16_t)((int32_t)/*6*/0x51 * (int32_t)rtY_Right.n_mot * k_brk / (INPUT_MAX * 0x10));
-    *rty_speedL = -(int16_t)((int32_t)/*6*/0x51 * (int32_t)rtY_Left.n_mot  * k_brk / (INPUT_MAX * 0x10));
+    *rty_speedR =  (int16_t)((int32_t)/*6*/0x10 * (int32_t)rtY_Right.n_mot * k_brk / (INPUT_MAX * 0x10));
+    *rty_speedL = -(int16_t)((int32_t)/*6*/0x10 * (int32_t)rtY_Left.n_mot  * k_brk / (INPUT_MAX * 0x10));
   }
 #else
     *rty_speedR = -(int16_t)((int32_t)/*6*/0x50 * (int32_t)rtY_Right.n_mot * k_brk / (INPUT_MAX * 0x10));
